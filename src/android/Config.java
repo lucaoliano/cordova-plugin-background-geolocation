@@ -15,6 +15,9 @@ import org.json.JSONException;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Config class
  */
@@ -35,6 +38,15 @@ public class Config implements Parcelable
     private Integer interval = 600000; //milliseconds
     private Integer fastestInterval = 120000; //milliseconds
     private Integer activitiesInterval = 1000; //milliseconds
+    private String url;
+    private String headers;
+    private String params;
+    private String oauthUrl;
+    private String accessToken;
+    private String refreshToken;
+    private String clientId;
+    private String username;
+    private String password;
 
     public int describeContents() {
         return 0;
@@ -57,6 +69,15 @@ public class Config implements Parcelable
         out.writeInt(getInterval());
         out.writeInt(getFastestInterval());
         out.writeInt(getActivitiesInterval());
+        out.writeString(getUrl());
+        out.writeString(getHeaders());
+        out.writeString(getParams());
+        out.writeString(getOauthUrl());
+        out.writeString(getAccessToken());
+        out.writeString(getRefreshToken());
+        out.writeString(getClientId());
+        out.writeString(getUsername());
+        out.writeString(getPassword());
     }
 
     public static final Parcelable.Creator<Config> CREATOR
@@ -71,6 +92,80 @@ public class Config implements Parcelable
     };
 
     public Config () {
+
+    }
+
+    public Config(String json) throws JSONException {
+        JSONObject jsonObject = new JSONObject(json);
+
+        if (jsonObject.has("stationaryRadius") && !jsonObject.isNull("stationaryRadius"))
+            setStationaryRadius((float) jsonObject.getDouble("stationaryRadius"));
+
+        if (jsonObject.has("distanceFilter") && !jsonObject.isNull("distanceFilter"))
+            setDistanceFilter(jsonObject.getInt("distanceFilter"));
+
+        if (jsonObject.has("locationTimeout") && !jsonObject.isNull("locationTimeout"))
+            setLocationTimeout(jsonObject.getInt("locationTimeout"));
+
+        if (jsonObject.has("desiredAccuracy") && !jsonObject.isNull("desiredAccuracy"))
+            setDesiredAccuracy(jsonObject.getInt("desiredAccuracy"));
+
+        if (jsonObject.has("debugging") && !jsonObject.isNull("debugging"))
+            setDebugging(jsonObject.getBoolean("debugging"));
+
+        if (jsonObject.has("notificationTitle") && !jsonObject.isNull("notificationTitle"))
+            setNotificationTitle(jsonObject.getString("notificationTitle"));
+
+        if (jsonObject.has("notificationText") && !jsonObject.isNull("notificationText"))
+            setNotificationText(jsonObject.getString("notificationText"));
+
+        if (jsonObject.has("activityType") && !jsonObject.isNull("activityType"))
+            setActivityType(jsonObject.getString("activityType"));
+
+        if (jsonObject.has("stopOnTerminate") && !jsonObject.isNull("stopOnTerminate"))
+            setStopOnTerminate(jsonObject.getBoolean("stopOnTerminate"));
+
+        if (jsonObject.has("notificationIcon") && !jsonObject.isNull("notificationIcon"))
+            setNotificationIcon(jsonObject.getString("notificationIcon"));
+
+        if (jsonObject.has("notificationIconColor") && !jsonObject.isNull("notificationIconColor"))
+            setNotificationIconColor(jsonObject.getString("notificationIconColor"));
+
+        if (jsonObject.has("serviceProvider") && !jsonObject.isNull("serviceProvider")) {
+            String serviceProvider = jsonObject.getString("serviceProvider");
+            setServiceProvider(ServiceProvider.valueOf(serviceProvider));
+        }
+
+        if (jsonObject.has("interval") && !jsonObject.isNull("interval"))
+            setInterval(jsonObject.getInt("interval"));
+
+        if (jsonObject.has("fastestInterval") && !jsonObject.isNull("fastestInterval"))
+            setFastestInterval(jsonObject.getInt("fastestInterval"));
+
+        if (jsonObject.has("activitiesInterval") && !jsonObject.isNull("activitiesInterval"))
+            setActivitiesInterval(jsonObject.getInt("activitiesInterval"));
+
+        if (jsonObject.has("url") && !jsonObject.isNull("url"))
+            setUrl(jsonObject.getString("url"));
+
+        if (jsonObject.has("headers") && !jsonObject.isNull("headers"))
+            setHeaders(jsonObject.getString("headers"));
+
+        if (jsonObject.has("params") && !jsonObject.isNull("params"))
+            setParams(jsonObject.getString("params"));
+
+        if (jsonObject.has("oauthUrl") && !jsonObject.isNull("oauthUrl"))
+            setOauthUrl(jsonObject.getString("oauthUrl"));
+        if (jsonObject.has("accessToken") && !jsonObject.isNull("accessToken"))
+            setAccessToken(jsonObject.getString("accessToken"));
+        if (jsonObject.has("refreshToken") && !jsonObject.isNull("refreshToken"))
+            setRefreshToken(jsonObject.getString("refreshToken"));
+        if (jsonObject.has("clientId") && !jsonObject.isNull("clientId"))
+            setClientId(jsonObject.getString("clientId"));
+        if (jsonObject.has("username") && !jsonObject.isNull("username"))
+            setUsername(jsonObject.getString("username"));
+        if (jsonObject.has("password") && !jsonObject.isNull("password"))
+            setPassword(jsonObject.getString("password"));
 
     }
 
@@ -90,6 +185,15 @@ public class Config implements Parcelable
         setInterval(in.readInt());
         setFastestInterval(in.readInt());
         setActivitiesInterval(in.readInt());
+        setUrl(in.readString());
+        setHeaders(in.readString());
+        setParams(in.readString());
+        setOauthUrl(in.readString());
+        setAccessToken(in.readString());
+        setRefreshToken(in.readString());
+        setClientId(in.readString());
+        setUsername(in.readString());
+        setPassword(in.readString());
     }
 
     public float getStationaryRadius() {
@@ -236,24 +340,107 @@ public class Config implements Parcelable
         return activityType;
     }
 
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public String getHeaders() {
+        return headers;
+    }
+
+    public void setHeaders(String headers) {
+        this.headers = headers;
+    }
+
+    public String getParams() {
+        return params;
+    }
+
+    public void setParams(String params) {
+        this.params = params;
+    }
+
+    public void setOauthUrl(String oauthUrl) {
+        this.oauthUrl = oauthUrl;
+    }
+
+    public String getOauthUrl() {
+        return oauthUrl;
+    }
+
+    public String getAccessToken() {
+        return accessToken;
+    }
+
+    public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public String getClientId() {
+        return clientId;
+    }
+
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
     @Override
-    public String toString () {
-        return new StringBuffer()
-                .append("stationaryRadius: "       + getStationaryRadius())
-                .append(" desiredAccuracy: "       + getDesiredAccuracy())
-                .append(" distanceFilter: "        + getDistanceFilter())
-                .append(" locationTimeout: "       + getLocationTimeout())
-                .append(" debugging: "             + isDebugging())
-                .append(" notificationIcon: "      + getNotificationIcon())
-                .append(" notificationIconColor: " + getNotificationIconColor())
-                .append(" notificationTitle: "     + getNotificationTitle())
-                .append(" notificationText: "      + getNotificationText())
-                .append(" stopOnTerminate: "       + getStopOnTerminate())
-                .append(" serviceProvider: "       + getServiceProvider())
-                .append(" interval: "              + getInterval())
-                .append(" fastestInterval: "       + getFastestInterval())
-                .append(" activitiesInterval: "    + getActivitiesInterval())
-                .toString();
+    public String toString() {
+        Map<String, Object> config = new HashMap<String, Object>();
+        config.put("stationaryRadius", getStationaryRadius());
+        config.put("desiredAccuracy", getDesiredAccuracy());
+        config.put("distanceFilter", getDistanceFilter());
+        config.put("locationTimeout", getLocationTimeout());
+        config.put("debugging", isDebugging());
+        config.put("notificationIcon", getNotificationIcon());
+        config.put("notificationIconColor", getNotificationIconColor());
+        config.put("notificationTitle", getNotificationTitle());
+        config.put("notificationText", getNotificationText());
+        config.put("stopOnTerminate", getStopOnTerminate());
+        config.put("serviceProvider", getServiceProvider());
+        config.put("interval", getInterval());
+        config.put("fastestInterval", getFastestInterval());
+        config.put("activitiesInterval", getActivitiesInterval());
+        config.put("url", getUrl());
+        config.put("headers", getHeaders());
+        config.put("params", getParams());
+        config.put("oauthUrl", getOauthUrl());
+        config.put("accessToken", getAccessToken());
+        config.put("refreshToken", getRefreshToken());
+        config.put("clientId", getClientId());
+        config.put("username", getUsername());
+        config.put("password", getPassword());
+
+        JSONObject json = new JSONObject(config);
+        return json.toString();
     }
 
     public Parcel toParcel () {
@@ -272,21 +459,54 @@ public class Config implements Parcelable
 
     public static Config fromJSONArray (JSONArray data) throws JSONException {
         Config config = new Config();
-        config.setStationaryRadius((float) data.getDouble(0));
-        config.setDistanceFilter(data.getInt(1));
-        config.setLocationTimeout(data.getInt(2));
-        config.setDesiredAccuracy(data.getInt(3));
-        config.setDebugging(data.getBoolean(4));
-        config.setNotificationTitle(data.getString(5));
-        config.setNotificationText(data.getString(6));
-        config.setActivityType(data.getString(7));
-        config.setStopOnTerminate(data.getBoolean(8));
-        config.setNotificationIcon(data.getString(9));
-        config.setNotificationIconColor(data.getString(10));
-        config.setServiceProvider(data.getInt(11));
-        config.setInterval(data.getInt(12));
-        config.setFastestInterval(data.getInt(13));
-        config.setActivitiesInterval(data.getInt(14));
+        if (!data.isNull(0))
+            config.setStationaryRadius((float) data.getDouble(0));
+        if (!data.isNull(1))
+            config.setDistanceFilter(data.getInt(1));
+        if (!data.isNull(2))
+            config.setLocationTimeout(data.getInt(2));
+        if (!data.isNull(3))
+            config.setDesiredAccuracy(data.getInt(3));
+        if (!data.isNull(4))
+            config.setDebugging(data.getBoolean(4));
+        if (!data.isNull(5))
+            config.setNotificationTitle(data.getString(5));
+        if (!data.isNull(6))
+            config.setNotificationText(data.getString(6));
+        if (!data.isNull(7))
+            config.setActivityType(data.getString(7));
+        if (!data.isNull(8))
+            config.setStopOnTerminate(data.getBoolean(8));
+        if (!data.isNull(9))
+            config.setNotificationIcon(data.getString(9));
+        if (!data.isNull(10))
+            config.setNotificationIconColor(data.getString(10));
+        if (!data.isNull(11))
+            config.setServiceProvider(data.getInt(11));
+        if (!data.isNull(12))
+            config.setInterval(data.getInt(12));
+        if (!data.isNull(13))
+            config.setFastestInterval(data.getInt(13));
+        if (!data.isNull(14))
+            config.setActivitiesInterval(data.getInt(14));
+        if (!data.isNull(15))
+            config.setUrl(data.getString(15));
+        if (!data.isNull(16))
+            config.setHeaders(data.getString(16));
+        if (!data.isNull(17))
+            config.setParams(data.getString(17));
+        if (!data.isNull(18))
+            config.setOauthUrl(data.getString(18));
+        if (!data.isNull(19))
+            config.setAccessToken(data.getString(19));
+        if (!data.isNull(20))
+            config.setRefreshToken(data.getString(20));
+        if (!data.isNull(21))
+            config.setClientId(data.getString(21));
+        if (!data.isNull(22))
+            config.setUsername(data.getString(22));
+        if (!data.isNull(23))
+            config.setPassword(data.getString(23));
 
         return config;
     }

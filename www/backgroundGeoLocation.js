@@ -55,6 +55,15 @@ var backgroundGeoLocation = {
             interval              = (config.interval >= 0) ? config.interval : locationTimeout * 1000, // milliseconds
             fastestInterval       = (config.fastestInterval >= 0) ? config.fastestInterval : 120000, // milliseconds
             activitiesInterval    = config.activitiesInterval || 1000;
+            url                   = config.url;
+            headers               = config.headers;
+            params                = config.params;
+            oauthUrl              = config.oauthUrl;
+            accessToken           = config.accessToken;
+            refreshToken          = config.refreshToken;
+            clientId              = config.clientId;
+            username              = config.username;
+            password              = config.password;
 
         exec(success || function() {},
             failure || function() {},
@@ -74,7 +83,16 @@ var backgroundGeoLocation = {
                 locationService,
                 interval,
                 fastestInterval,
-                activitiesInterval
+                activitiesInterval,
+                url,
+                headers,
+                params,
+                oauthUrl,
+                accessToken,
+                refreshToken,
+                clientId,
+                username,
+                password
             ]
         );
     },

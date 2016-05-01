@@ -27,6 +27,7 @@
         <source-file src="src/android/AbstractLocationService.java" target-dir="src/com/tenforwardconsulting/cordova/bgloc"/>
         <source-file src="src/android/DistanceFilterLocationService.java" target-dir="src/com/tenforwardconsulting/cordova/bgloc"/>
         <source-file src="src/android/FusedLocationService.java" target-dir="src/com/tenforwardconsulting/cordova/bgloc"/>
+        <source-file src="src/android/RestartServiceReceiver.java" target-dir="src/com/tenforwardconsulting/cordova/bgloc"/>
 
         <source-file src="src/android/data/LocationProxy.java" target-dir="src/com/tenforwardconsulting/cordova/bgloc/data" />
         <source-file src="src/android/data/DAOFactory.java" target-dir="src/com/tenforwardconsulting/cordova/bgloc/data" />
@@ -45,6 +46,13 @@
             <service android:enabled="true" android:exported="false" android:name="com.tenforwardconsulting.cordova.bgloc.FusedLocationService"
                      android:process=":remote" android:stopWithTask="false">
             </service>
+            <receiver android:name="com.tenforwardconsulting.cordova.bgloc.RestartServiceReceiver" >
+                <intent-filter>
+                    <action android:name="YouWillNeverKillMe" />
+                    <action android:name="android.intent.action.BOOT_COMPLETED" />
+                    <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                </intent-filter>
+            </receiver>
         </config-file>
 
         <config-file target="AndroidManifest.xml" parent="/manifest">
@@ -55,6 +63,7 @@
             <uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS"/>
             <uses-permission android:name="android.permission.INTERNET"/>
             <uses-permission android:name="android.permission.WAKE_LOCK"/>
+            <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
         </config-file>
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="BackgroundGeoLocation">

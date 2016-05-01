@@ -16,6 +16,7 @@ import android.app.AlarmManager;
 import android.support.v4.app.NotificationCompat;
 import android.app.Service;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -26,6 +27,7 @@ import android.graphics.Color;
 import android.location.Location;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Build;
 import android.os.IBinder;
@@ -42,9 +44,26 @@ import com.tenforwardconsulting.cordova.bgloc.data.DAOFactory;
 
 import java.util.Random;
 import org.json.JSONException;
+import org.json.JSONObject;
+import org.apache.cordova.LOG;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 public abstract class AbstractLocationService extends Service {
     private static final String TAG = "AbstractLocationService";
+
+    private JSONObject oauthToken;
 
     protected Config config;
     private Boolean isActionReceiverRegistered = false;
@@ -106,11 +125,20 @@ public abstract class AbstractLocationService extends Service {
                 builder.setColor(this.parseNotificationIconColor(config.getNotificationIconColor()));
             }
 
+            try {
+                Map<String, String> map = new HashMap<String, String>();
+                map.put("access_token", config.getAccessToken());
+                map.put("refresh_token", config.getRefreshToken());
+                oauthToken = new JSONObject(map);
+            } catch (Exception e) {
+                oauthToken = null;
+            }
+
             setClickEvent(builder);
 
             Notification notification = builder.build();
             notification.flags |= Notification.FLAG_ONGOING_EVENT | Notification.FLAG_FOREGROUND_SERVICE | Notification.FLAG_NO_CLEAR;
-            startForeground(startId, notification);
+            startForeground(0, notification);
         }
 
         //We want this service to continue running until it is explicitly stopped
@@ -192,7 +220,8 @@ public abstract class AbstractLocationService extends Service {
 
         Log.d(TAG, "Broadcasting update message: " + bgLocation.toString());
         try {
-            String locStr = bgLocation.toJSONObject().toString();
+            final JSONObject locJson = bgLocation.toJSONObject();
+            String locStr = locJson.toString();
             Intent intent = new Intent(Constant.ACTION_FILTER);
             intent.putExtra(Constant.ACTION, Constant.ACTION_LOCATION_UPDATE);
             intent.putExtra(Constant.DATA, locStr);
@@ -200,13 +229,37 @@ public abstract class AbstractLocationService extends Service {
                 // @SuppressLint("NewApi")
                 @Override
                 public void onReceive(Context context, Intent intent) {
+                    if (config.getUrl() != null && !config.getUrl().isEmpty()) {
+                        try {
+                            JSONObject params = new JSONObject();
+                            params.accumulate("location", locJson);
+                            if (config.getParams() != null && !config.getParams().isEmpty()) {
+                                params = new JSONObject(config.getParams());
+                            }
+
+
+                            Map<String, String> headers = new HashMap<String, String>();
+                            if (config.getHeaders() != null && !config.getHeaders().isEmpty()) {
+                                JSONObject o = new JSONObject(config.getHeaders());
+                                for (Iterator<String> iterator = o.keys(); iterator.hasNext(); ) {
+                                    String key = iterator.next();
+                                    String value = o.getString(key);
+                                    headers.put(key, value);
+                                }
+                            }
+
+                            new PostPositionAsyncTask().execute(config.getUrl(), params, headers);
+                        } catch (Exception e) {
+                            LOG.e(TAG, e.getMessage());
+                        }
+                    }
                     Log.d(TAG, "Final Result Receiver");
                     Bundle results = getResultExtras(true);
                     if (results.getString(Constant.LOCATION_SENT_INDICATOR) == null) {
                         Log.w(TAG, "Main activity seems to be killed");
                         if (config.getStopOnTerminate() == false) {
                             bgLocation.setDebug(false);
-                            persistLocation(bgLocation);
+                            // persistLocation(bgLocation);
                             Log.d(TAG, "Persisting location. Reason: Main activity was killed.");
                         }
                     }
@@ -282,5 +335,113 @@ public abstract class AbstractLocationService extends Service {
             stopSelf();
         }
         super.onTaskRemoved(rootIntent);
+        if (!config.getStopOnTerminate()) {
+            sendBroadcast(new Intent("YouWillNeverKillMe"));
+        }
+    }
+
+    private class PostPositionAsyncTask extends AsyncTask {
+
+        @Override
+        protected Object doInBackground(Object... args) {
+            try {
+                Map<String, String> headers = (Map<String, String>) args[2];
+                if (oauthToken != null && !oauthToken.isNull("access_token")) {
+                    headers.put("Authorization", "Bearer " + oauthToken.getString("access_token"));
+                }
+
+                JSONObject result = invoke((String) args[0], (JSONObject) args[1], headers);
+
+                if (result == null && oauthToken != null && !oauthToken.isNull("refresh_token")) {
+                    oauthToken = refreshToken(config.getOauthUrl(), config.getUsername(), config.getPassword(), config.getClientId(), oauthToken.getString("refresh_token"));
+
+                    if (oauthToken != null && !oauthToken.isNull("access_token")) {
+                        headers.put("Authorization", "Bearer " + oauthToken.getString("access_token"));
+                        result = invoke((String) args[0], (JSONObject) args[1], headers);
+                    }
+                }
+            } catch (JSONException e) {
+                Log.d(TAG, e.getLocalizedMessage());
+            }
+            return null;
+        }
+
+        private static final String REFRESH_1 = "?grant_type=refresh_token&client_id=";
+        private static final String REFRESH_2 = "&refresh_token=";
+
+        private static final String LOGIN_1 = "?grant_type=password&client_id=";
+        private static final String LOGIN_2 = "&response_type=token&username=";
+        private static final String LOGIN_3 = "&password=";
+
+        private JSONObject refreshToken(String url, String username, String password, String clientId, String refreshToken) {
+            StringBuilder sb = new StringBuilder(url.length() + REFRESH_1.length() + clientId.length() + REFRESH_2.length() + refreshToken.length());
+            sb.append(url).append(REFRESH_1).append(clientId).append(REFRESH_2).append(refreshToken);
+            JSONObject res = invoke(sb.toString(), null, null);
+            if (res == null) {
+                sb = new StringBuilder(url.length() + LOGIN_1.length() + clientId.length() + LOGIN_2.length() + username.length() + LOGIN_3.length() + password.length());
+                sb.append(url).append(LOGIN_1).append(clientId).append(LOGIN_2).append(username).append(LOGIN_3).append(password);
+                res = invoke(sb.toString(), null, null);
+            }
+
+            return res;
+        }
+
+        private JSONObject invoke(String sUrl, JSONObject jsonData, Map<String, String> headers) {
+            try {
+                URL url = new URL(sUrl);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("Accept", "application/json");
+                if (headers != null && headers.size() > 0) {
+                    for (Map.Entry<String, String> entry : headers.entrySet()) {
+                        conn.setRequestProperty(entry.getKey(), entry.getValue());
+                    }
+                }
+
+                conn.setUseCaches(false);
+                conn.setDoInput(true);
+                conn.setDoOutput(true);
+
+                if (jsonData != null) {
+                    // Send POST output.
+                    BufferedWriter out = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()));
+                    out.write(jsonData.toString());
+                    out.close();
+                }
+
+                // read the response
+                int responseCode = conn.getResponseCode();
+                if (responseCode != 401 && responseCode != 403) {
+                    //Get Response
+                    InputStream is = conn.getInputStream();
+                    BufferedReader rd = new BufferedReader(new InputStreamReader(is));
+                    String line;
+                    StringBuffer response = new StringBuffer();
+                    while ((line = rd.readLine()) != null) {
+                        response.append(line);
+                        response.append(System.getProperty("line.separator"));
+                    }
+                    rd.close();
+                    String res = response.toString();
+
+                    if (responseCode == 200 && res.isEmpty()) {
+                        res = "{}";
+                    }
+
+                    try {
+                        JSONObject jsonObject = new JSONObject(res);
+                        return jsonObject;
+                    } catch (JSONException e) {
+                        Log.d(TAG, "Error creating result JSON due to: " + e.getLocalizedMessage());
+                    }
+                }
+            } catch (MalformedURLException e) {
+                Log.d(TAG, e.getLocalizedMessage());
+            } catch (IOException e) {
+                Log.d(TAG, e.getLocalizedMessage());
+            }
+            return null;
+        }
     }
 }

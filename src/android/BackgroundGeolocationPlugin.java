@@ -40,7 +40,9 @@ import com.tenforwardconsulting.cordova.bgloc.data.LocationDAO;
 import com.tenforwardconsulting.cordova.bgloc.data.DAOFactory;
 import com.tenforwardconsulting.cordova.bgloc.data.LocationProxy;
 
-
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 
 public class BackgroundGeolocationPlugin extends CordovaPlugin {
@@ -142,6 +144,14 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
                 this.callbackContext = callbackContext;
                 this.config = Config.fromJSONArray(data);
                 Log.d(TAG, "bg service configured");
+                try {
+                    Log.d(TAG, Arrays.toString(context.fileList()));
+                    FileOutputStream fos = context.openFileOutput("config.json", Context.MODE_PRIVATE);
+                    fos.write(this.config.toString().getBytes());
+                    fos.close();
+                } catch (IOException e) {
+                    Log.e(TAG, e.getMessage() + "", e);
+                }
                 // callbackContext.success(); //we cannot do this
             } catch (JSONException e) {
                 callbackContext.error("Configuration error: " + e.getMessage());
