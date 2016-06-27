@@ -1,25 +1,25 @@
 //
-//  BackgroundLocation.m
+//  Location.m
 //  CDVBackgroundGeolocation
 //
 //  Created by Marian Hello on 10/06/16.
 //
 
 #import <Foundation/Foundation.h>
-#import "BackgroundLocation.h"
+#import "Location.h"
 
 enum {
     TWO_MINUTES = 120,
     MAX_SECONDS_FROM_NOW = 86400
 };
 
-@implementation BackgroundLocation
+@implementation Location
 
 @synthesize id, time, accuracy, altitudeAccuracy, speed, heading, altitude, latitude, longitude, provider, service_provider, type, debug;
 
 + (instancetype) fromCLLocation:(CLLocation*)location;
 {
-    BackgroundLocation *instance = [[BackgroundLocation alloc] init];
+    Location *instance = [[Location alloc] init];
     
     instance.time = location.timestamp;
     instance.accuracy = [NSNumber numberWithDouble:location.horizontalAccuracy];
@@ -64,11 +64,20 @@ enum {
     return -[time timeIntervalSinceNow];
 }
 
+- (NSMutableDictionary*) toDictionaryWithId
+{
+    NSMutableDictionary *dict = [self toDictionary];
+
+    // id is solely for internal purposes like deleteLocation method!!!
+    if (id != nil) [dict setObject:id forKey:@"id"];
+    
+    return dict;
+}
+
 - (NSMutableDictionary*) toDictionary
 {
     NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithCapacity:10];
-
-    if (id != nil) [dict setObject:id forKey:@"id"];
+    
     if (time != nil) [dict setObject:[NSNumber numberWithDouble:([time timeIntervalSince1970] * 1000)] forKey:@"time"];
     if (accuracy != nil) [dict setObject:accuracy forKey:@"accuracy"];
     if (altitudeAccuracy != nil) [dict setObject:altitudeAccuracy forKey:@"altitudeAccuracy"];
@@ -93,7 +102,7 @@ enum {
     return coordinate;
 }
 
-- (double) distanceFromLocation:(BackgroundLocation*)location
+- (double) distanceFromLocation:(Location*)location
 {
     const float EarthRadius = 6378137.0f;
     double a_lat = [self.latitude doubleValue];
@@ -109,11 +118,11 @@ enum {
 }
 
 /** 
- * Determines whether instance is better then BackgroundLocation reading
+ * Determines whether instance is better then Location reading
  * @param location  The new Location that you want to evaluate
  * Note: code taken from https://developer.android.com/guide/topics/location/strategies.html
  */
-- (BOOL) isBetterLocation:(BackgroundLocation*)location
+- (BOOL) isBetterLocation:(Location*)location
 {
     if (location == nil) {
         // A instance location is always better than no location
@@ -156,7 +165,7 @@ enum {
     return NO;
 }
 
-- (BOOL) isBeyond:(BackgroundLocation*)location radius:(NSInteger)radius
+- (BOOL) isBeyond:(Location*)location radius:(NSInteger)radius
 {
     double pointDistance = [self distanceFromLocation:location];
     return (pointDistance - [self.accuracy doubleValue] - [location.accuracy doubleValue]) > radius;
@@ -172,12 +181,12 @@ enum {
 
 - (NSString *) description
 {
-    return [NSString stringWithFormat:@"BackgroundLocation: id=%ld time=%ld lat=%@ lon=%@ accu=%@ aaccu=%@ speed=%@ head=%@ alt=%@ type=%@ debug=%d", (long)id, (long)time, latitude, longitude, accuracy, altitudeAccuracy, speed, heading, altitude, type, debug];
+    return [NSString stringWithFormat:@"Location: id=%ld time=%ld lat=%@ lon=%@ accu=%@ aaccu=%@ speed=%@ head=%@ alt=%@ type=%@ debug=%d", (long)id, (long)time, latitude, longitude, accuracy, altitudeAccuracy, speed, heading, altitude, type, debug];
 }
 
 -(id) copyWithZone: (NSZone *) zone
 {
-    BackgroundLocation *copy = [[[self class] allocWithZone: zone] init];
+    Location *copy = [[[self class] allocWithZone: zone] init];
     if (copy) {
         copy.time = time;
         copy.accuracy = accuracy;
@@ -195,6 +204,5 @@ enum {
     
     return copy;
 }
-
 
 @end

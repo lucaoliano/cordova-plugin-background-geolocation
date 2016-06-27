@@ -33,7 +33,7 @@
     // Use XCTAssert and related functions to verify your tests produce the correct results.
     
     SQLiteLocationDAO *locationDAO = [SQLiteLocationDAO sharedInstance];
-    BackgroundLocation *location = [[BackgroundLocation alloc] init];
+    Location *location = [[Location alloc] init];
     
     location.time = [NSDate dateWithTimeIntervalSince1970:1465511097774.577];
     location.accuracy = [NSNumber numberWithDouble:5];
@@ -48,8 +48,8 @@
     
     [locationDAO persistLocation:location];
     
-    NSArray<BackgroundLocation*> *locations = [locationDAO getAllLocations];
-    BackgroundLocation *result = [locations firstObject];
+    NSArray<Location*> *locations = [locationDAO getAllLocations];
+    Location *result = [locations firstObject];
     
     XCTAssertEqual([locations count], 1, @"Number of stored location is %lu expecting 1", (unsigned long)[locations count]);
     XCTAssertTrue([result.time isEqualToDate:[NSDate dateWithTimeIntervalSince1970:1465511097774.577]], "Location time is %@ expecting %@", result.time, [NSDate dateWithTimeIntervalSince1970:1465511097774.577]);
@@ -67,7 +67,7 @@
 
 - (void)testDeleteLocation {
     SQLiteLocationDAO *locationDAO = [SQLiteLocationDAO sharedInstance];
-    BackgroundLocation *location = [[BackgroundLocation alloc] init];
+    Location *location = [[Location alloc] init];
     
     location.time = [NSDate dateWithTimeIntervalSince1970:1465511097774.577];
     location.accuracy = [NSNumber numberWithDouble:5];
@@ -83,12 +83,12 @@
     NSNumber *locationId1 = [locationDAO persistLocation:location];
     NSNumber *locationId2 = [locationDAO persistLocation:location];
     
-    NSArray<BackgroundLocation*> *locations = [locationDAO getAllLocations];
+    NSArray<Location*> *locations = [locationDAO getAllLocations];
     XCTAssertEqual([locations count], 2, @"Number of stored location is %lu expecting 2", (unsigned long)[locations count]);
     
     [locationDAO deleteLocation:locationId1];
     locations = [locationDAO getAllLocations];
-    BackgroundLocation *result = [locations firstObject];
+    Location *result = [locations firstObject];
 
     XCTAssertEqual([locations count], 1, @"Number of stored location is %lu expecting 1", (unsigned long)[locations count]);
     XCTAssertTrue([result.id isEqualToNumber:locationId2], "LocationId is %@ expecting %@", result.id, locationId2);
@@ -96,7 +96,7 @@
 
 - (void)testDeleteAllLocations {
     SQLiteLocationDAO *locationDAO = [SQLiteLocationDAO sharedInstance];
-    BackgroundLocation *location = [[BackgroundLocation alloc] init];
+    Location *location = [[Location alloc] init];
     
     location.time = [NSDate dateWithTimeIntervalSince1970:1465511097774.577];
     location.accuracy = [NSNumber numberWithDouble:5];
@@ -117,7 +117,7 @@
     [locationDAO persistLocation:location];
     [locationDAO persistLocation:location];
     
-    NSArray<BackgroundLocation*> *locations = [locationDAO getAllLocations];
+    NSArray<Location*> *locations = [locationDAO getAllLocations];
     XCTAssertEqual([locations count], 7, @"Number of stored location is %lu expecting 7", (unsigned long)[locations count]);
     
     [locationDAO deleteAllLocations];
@@ -128,10 +128,10 @@
 
 - (void)testGetAllLocations {
     SQLiteLocationDAO *locationDAO = [SQLiteLocationDAO sharedInstance];
-    BackgroundLocation *location;
+    Location *location;
     
     for (int i = 0; i < 10; i++) {
-        location = [[BackgroundLocation alloc] init];
+        location = [[Location alloc] init];
         location.time = [NSDate dateWithTimeIntervalSince1970:1465511097774.577+i];
         location.accuracy = [NSNumber numberWithDouble:5+i];
         location.speed = [NSNumber numberWithDouble:31.67+i];
@@ -146,11 +146,11 @@
         [locationDAO persistLocation:location];
     }
     
-    NSArray<BackgroundLocation*> *locations = [locationDAO getAllLocations];
+    NSArray<Location*> *locations = [locationDAO getAllLocations];
     XCTAssertEqual([locations count], 10, @"Number of stored location is %lu expecting 10", (unsigned long)[locations count]);
 
     for (int i = 0; i < 10; i++) {
-        BackgroundLocation *result = [locations objectAtIndex:i];
+        Location *result = [locations objectAtIndex:i];
         XCTAssertEqual([result.id intValue], i+1, "LocationId is %d expecting %d", [result.id intValue], i+1);
         XCTAssertTrue([result.time isEqualToDate:[NSDate dateWithTimeIntervalSince1970:1465511097774.577+i]], "Location time is %@ expecting %@", result.time, [NSDate dateWithTimeIntervalSince1970:1465511097774.577+i]);
         XCTAssertTrue([result.accuracy isEqualToNumber:[NSNumber numberWithDouble:5+i]], "Location accuracy is %@ expecting %@", result.accuracy, [NSNumber numberWithDouble:5+i]);
@@ -165,11 +165,34 @@
     }
 }
 
-- (void)testPerformanceExample {
-    // This is an example of a performance test case.
-    [self measureBlock:^{
-        // Put the code you want to measure the time of here.
-    }];
+- (void)testPersistLocationWithRowLimit {
+    int maxRows = 100;
+    SQLiteLocationDAO *locationDAO = [SQLiteLocationDAO sharedInstance];
+    Location *location;
+    
+    for (int i = 0; i < maxRows * 2; i++) {
+        [locationDAO persistLocation:nil limitRows:maxRows];
+    }
+    
+    NSArray<Location*> *locations = [locationDAO getAllLocations];
+    XCTAssertEqual([locations count], maxRows, @"Number of stored location is %lu expecting 2000", (unsigned long)[locations count]);
+}
+
+- (void)testPersistLocationWithRowLimitWhenMaxRowsReduced {
+    NSInteger maxRowsRun[2] = {100, 10};
+    SQLiteLocationDAO *locationDAO = [SQLiteLocationDAO sharedInstance];
+    
+    for (int i = 0; i < sizeof(maxRowsRun) / sizeof(NSInteger); i++) {
+        NSInteger maxRows = maxRowsRun[i];
+        for (int i = 0; i < maxRows * 2; i++) {
+            [locationDAO persistLocation:nil limitRows:maxRows];
+        }
+        NSArray<Location*> *locations = [locationDAO getAllLocations];
+        XCTAssertEqual([locations count], maxRows, @"Number of stored location is %lu expecting %ld", (unsigned long)[locations count], (long)maxRows);
+    }
+    
+    NSNumber *locationId = [locationDAO persistLocation:nil];
+    XCTAssertTrue([locationId isEqualToNumber:[NSNumber numberWithInt:101]], @"Expecting primary key id to be 101 actual %@", locationId);
 }
 
 @end

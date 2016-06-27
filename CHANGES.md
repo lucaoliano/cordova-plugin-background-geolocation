@@ -1,5 +1,16 @@
 ## Changelog
 
+### [3.0.0] - unreleased
+### Added
+- iOS limit maximum number of locations in db
+
+### Changed
+- deprecating deleteAllLocations
+- iOS persist locations also when url option is not used
+
+### Fixed
+- iOS do not block js thread when posting locations
+
 ### [2.1.2] - 2016-06-23
 ### Fixed
 - iOS database not created

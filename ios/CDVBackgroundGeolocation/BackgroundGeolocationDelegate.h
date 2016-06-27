@@ -13,7 +13,6 @@
 #import <CoreLocation/CoreLocation.h>
 #import <AudioToolbox/AudioToolbox.h>
 #import "Config.h"
-#import "BackgroundLocation.h"
 
 enum BGLocationStatus {
     PERMISSIONDENIED = 1,

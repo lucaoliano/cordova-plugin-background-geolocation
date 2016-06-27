@@ -21,6 +21,7 @@
 @property NSString* url;
 @property NSMutableDictionary* httpHeaders;
 @property BOOL saveBatteryOnBackground;
+@property NSInteger maxLocations;
 
 + (instancetype) fromDictionary:(NSDictionary*)config;
 - (CLActivityType) decodeActivityType;

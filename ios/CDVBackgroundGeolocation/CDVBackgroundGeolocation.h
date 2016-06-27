@@ -33,6 +33,7 @@
 - (void) getLocations:(CDVInvokedUrlCommand*)command;
 - (void) deleteLocation:(CDVInvokedUrlCommand*)command;
 - (void) deleteAllLocations:(CDVInvokedUrlCommand*)command;
+- (void) getLogEntries:(CDVInvokedUrlCommand*)command;
 - (void) onPause:(NSNotification *)notification;
 - (void) onResume:(NSNotification *)notification;
 - (void) onAppTerminate;

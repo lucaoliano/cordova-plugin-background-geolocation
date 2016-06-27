@@ -178,10 +178,18 @@ var backgroundGeolocation = {
     },
 
     deleteAllLocations: function(success, failure) {
+        console.log('[Warning]: deleteAllLocations is deprecated and will be removed in future versions.')
         exec(success || emptyFnc,
             failure || emptyFnc,
             'BackgroundGeolocation',
             'deleteAllLocations', []);
+    },
+    
+    getLogEntries: function(limit, success, failure) {
+        exec(success || emptyFnc,
+            failure || emptyFnc,
+            'BackgroundGeolocation',
+            'getLogEntries', [limit]);
     }
 };
 

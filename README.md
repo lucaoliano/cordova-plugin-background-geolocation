@@ -144,10 +144,10 @@ Parameter | Type | Platform     | Description
 `option.notificationIconSmall` | `String` optional | Android | The filename of a custom notification icon. See android quirks.
 `option.locationProvider` | `Number` | Android | Set location provider **@see** [wiki](https://github.com/mauron85/cordova-plugin-background-geolocation/wiki/Android-providers)
 `option.activityType` | `String` | iOS | [AutomotiveNavigation, OtherNavigation, Fitness, Other] Presumably, this affects iOS GPS algorithm. **@see** [Apple docs](https://developer.apple.com/library/ios/documentation/CoreLocation/Reference/CLLocationManager_Class/CLLocationManager/CLLocationManager.html#//apple_ref/occ/instp/CLLocationManager/activityType) for more information
-`options.url` | `String` | iOS, Android | Server url where to send HTTP POST with recorded locations
-`options.httpHeaders` | `Object` | iOS, Android | Optional HTTP headers sent along in HTTP request
-`options.saveBatteryOnBackground` | `Boolean` | iOS | If enabled it will automatically switch to less accurate significant changes and region monitory when in background (default)
-
+`option.url` | `String` | iOS, Android | Server url where to send HTTP POST with recorded locations
+`option.httpHeaders` | `Object` | iOS, Android | Optional HTTP headers sent along in HTTP request
+`option.saveBatteryOnBackground` | `Boolean` | iOS | If enabled it will automatically switch to less accurate significant changes and region monitory when in background (default)
+`options.maxLocations` | `Number` | iOS | Limit maximum number of locations stored into db (default: 10000)
 
 Following options are specific to provider as defined by locationProvider option
 ### ANDROID_ACTIVITY_PROVIDER provider options
@@ -250,9 +250,13 @@ Platform: iOS, Android
 Delete stored location by given locationId.
 
 ### backgroundGeolocation.deleteAllLocations(success, fail)
+Deprecated warning: This method is **deprecated** and should not be used.
+Plugin manages number of locations automatically and location count never exceeds number
+as defined by `option.maxLocations`.
+
 Platform: iOS, Android
 
-Delete all stored locations.
+Delete all stored locations. 
 
 ### backgroundGeolocation.switchMode(modeId, success, fail)
 Platform: iOS
