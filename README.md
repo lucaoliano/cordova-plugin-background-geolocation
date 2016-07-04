@@ -31,7 +31,7 @@ Some incompatible changes were introduced:
 * option `stopOnTerminate` defaults to true
 * option `locationService` renamed to `locationProvider`
 * android providers are now **ANDROID_DISTANCE_FILTER_PROVIDER** and **ANDROID_ACTIVITY_PROVIDER**
-* removed `locationTimeout` option (use `interval` in milliseconds instead) 
+* removed `locationTimeout` option (use `interval` in milliseconds instead)
 * `notificationIcon` was replaced with two separate options (`notificationIconSmall` and `notificationIconLarge`)
 * js object backgroundGeoLocation is deprecated use `backgroundGeolocation` instead
 * iOS foreground mode witch automatic background mode switch
@@ -252,7 +252,7 @@ as defined by `option.maxLocations`.
 
 Platform: iOS, Android
 
-Delete all stored locations. 
+Delete all stored locations.
 
 ### backgroundGeolocation.switchMode(modeId, success, fail)
 Platform: iOS
@@ -300,7 +300,8 @@ backgroundGeolocation.watchLocationMode(
   function (enabled) {
     if (enabled) {
       // location service are now enabled
-      // time to change UI to reflect that
+      // call backgroundGeolocation.start
+      // only if user already has expressed intent to start service
     } else {
       // location service are now disabled or we don't have permission
       // time to change UI to reflect that
@@ -345,7 +346,7 @@ backgroundGeolocation.isLocationEnabled(function (enabled) {
 
 If `option.url` is not defined, all locations updates are recorded in local db. When App is in foreground or background in addition to storing location in local db, location callback function is triggered. Number of location stored in db is limited by `option.maxLocations` a never exceeds this number. Instead old locations are replaced by new ones.
 
-When `option.url` is defined. Location updates are also stored in local db. In addition, each location is also immediately posted to url defined by `option.url`. If post is successful, the location is marked as deleted in local db. All failed to post locations will be coalesced and send in some time later in one single batch. <TO_BE_DEFINED>Batch sync takes place only as per interval defined in IntervalForPost config option.</TO_BE_DEFINED>.
+When `option.url` is defined. Location updates are also stored in local db. In addition, each location is also immediately posted to url defined by `option.url`. If post is successful, the location is marked as deleted in local db. All failed to post locations will be coalesced and send in some time later in one single batch. [TO_BE_DEFINED]~~Batch sync takes place only as per interval defined in IntervalForPost config option.~~[/TO_BE_DEFINED].
 
 Request body of posted locations is always array, even when only one location is sent.
 
@@ -359,7 +360,7 @@ var app = express();
 // parse application/json
 app.use(bodyParser.json({ type : '*/*' })); // force json
 
-app.post('/path', function(request, response){
+app.post('/locations', function(request, response){
     console.log('Headers:\n', request.headers);
     console.log('Body:\n', request.body);
     console.log('------------------------------');
@@ -437,27 +438,73 @@ Plugin will not work in XDK emulator ('Unimplemented API Emulation: BackgroundGe
 ## Debugging
 
 When `option.debug` is true, plugin logs all activity into database.
-Following snippet will retrieve last 100 log entries.
+You can attach your device to the computer and print logs to console.
+
+* For iOS open Safari and select from menu `Develop` ➜ `Your Device name`
+* For Android launch Chrome `about:inspect`
+
+Following snippet will print colored log of last 100 entries.
 
 ```javascript
-function padLeft(nr, n, str) {
-  return Array(n-String(nr).length+1).join(str||'0')+nr;
-}
-
-backgroundGeolocation.getLogEntries(100, function(logEntries) {
-  var output = [].map.call(logEntries, function(logEntry) {
+function printLogs(logEntries) {
+  function padLeft(nr, n, str) {
+    return Array(n-String(nr).length+1).join(str||'0')+nr;
+  }  
+  var COLORS = [];
+  COLORS[1] = 'background:white;color:red';
+  COLORS[2] = 'background:black;color:yellow';
+  COLORS[4] = 'background:white;color:blue';
+  COLORS[8] = 'background:white;color:black';
+  COLORS[16] = 'background:white;color:black';
+  var logLines = [], logLinesColor = [];
+  [].forEach.call(logEntries, function(logEntry) {
       var d = new Date(logEntry.timestamp * 1000);
       var dateFormatted = [
         [d.getFullYear(), padLeft(d.getMonth()+1,2), padLeft(d.getDate(),2)].join('/'),
         [padLeft(d.getHours(),2), padLeft(d.getMinutes(),2), padLeft(d.getSeconds(),2)].join(':')
-        ].join(' ');
-      return ([
-        '[' + dateFormatted + ']',
-        logEntry.message
-      ].join(' '));
+      ].join(' ');
+      logLines.push('%c[' + dateFormatted + '] %c' + logEntry.message);
+      logLinesColor.push('background:white;color:black');
+      logLinesColor.push(COLORS[logEntry.level]);
   });
-  console.log(output.join('\n'));
-});
+  console.log.apply(console, [logLines.join('\n')].concat(logLinesColor));
+}
+
+backgroundGeolocation.getLogEntries(100, printLogs);
+```
+
+You can also post logs to your server:
+
+``` javascript
+function postLogs(logEntries) {
+  function jQueryPost(logEntries) {
+    logEntries = logEntries || [];
+    console.log('Posting ' + logEntries.length + ' log entries...');
+    jQuery.ajax({
+      type: 'POST',
+      url: 'http://192.168.81.15:3000/debug',
+      data: JSON.stringify(logEntries),
+      timeout: 5000
+    })
+    .done(function () {
+      console.log('Logs has been successfully posted.');
+    })
+    .fail(function(xhr) {
+      console.log('Posting of logs failed with status: ' + xhr.status);
+    });
+  }
+  // will load jQuery if you not using it in your app
+  if (!window.jQuery) {
+    var script = document.createElement('script');    
+    script.src = 'https://ajax.googleapis.com/ajax/libs/jquery/3.0.0/jquery.min.js';
+    script.onload = function () { jQueryPost(logEntries); };
+    document.getElementsByTagName('head')[0].appendChild(script);
+  } else {
+    jQueryPost(logEntries);
+  }
+}
+
+backgroundGeolocation.getLogEntries(100, postLogs);
 ```
 
 ### Debugging sounds

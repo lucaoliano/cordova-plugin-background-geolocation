@@ -12,8 +12,6 @@
 
 #import "CDVBackgroundGeolocation.h"
 #import "Config.h"
-#import "CocoaLumberjack.h"
-#import "FMDBLogger.h"
 #import "Logging.h"
 
 @implementation CDVBackgroundGeolocation {
