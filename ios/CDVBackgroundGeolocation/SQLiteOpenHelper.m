@@ -50,7 +50,6 @@ static int const OPEN_READWRITE = SQLITE_OPEN_CREATE|SQLITE_OPEN_READWRITE|SQLIT
 {
     if (mQueue != nil) {
         // TODO: add check if db was closed by user
-        // probably will need to create separate db class
         return mQueue;
     }
     
@@ -125,11 +124,11 @@ static int const OPEN_READWRITE = SQLITE_OPEN_CREATE|SQLITE_OPEN_READWRITE|SQLIT
     
     if ([self getVersion:queue] == -1) {
         NSArray *columns = @[
-                             @{ @"name": @"id", @"type": [SQLPrimaryKeyColumnType sqlColumnWithType: kInteger]},
-                             @{ @"name": @"db_version", @"type": [SQLColumnType sqlColumnWithType: kInteger]},
-                             @{ @"name": @"created", @"type": [SQLColumnType sqlColumnWithType: kInteger]},
-                             @{ @"name": @"last_updated", @"type": [SQLColumnType sqlColumnWithType: kInteger]}
-                             ];
+            @{ @"name": @"id", @"type": [SQLPrimaryKeyColumnType sqlColumnWithType: kInteger]},
+            @{ @"name": @"db_version", @"type": [SQLColumnType sqlColumnWithType: kInteger]},
+            @{ @"name": @"created", @"type": [SQLColumnType sqlColumnWithType: kInteger]},
+            @{ @"name": @"last_updated", @"type": [SQLColumnType sqlColumnWithType: kInteger]}
+         ];
         
         [queue inDatabase:^(FMDatabase *database) {
             if ([database executeStatements:[SQLiteHelper createTableSqlStatement:metaTableName columns:columns]]) {

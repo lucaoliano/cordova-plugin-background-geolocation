@@ -155,7 +155,7 @@
             locationId = [self persistLocation:location intoDatabase:database];
             return;
         } else if (rowCount > maxRows) {
-            sql = [NSString stringWithFormat:@"DELETE FROM %1$@ WHERE %2$@ IN (SELECT %2$@ FROM %1$@ ORDER BY %3$@ LIMIT %4$d);VACUUM;",
+            sql = [NSString stringWithFormat:@"DELETE FROM %1$@ WHERE %2$@ IN (SELECT %2$@ FROM %1$@ ORDER BY %3$@ LIMIT %4$ld);VACUUM;",
                    @LC_TABLE_NAME, @LC_COLUMN_NAME_ID, @LC_COLUMN_NAME_TIME, (rowCount - maxRows)];
             if (![database executeStatements:sql]) {
                 NSLog(@"%@ failed code: %d: message: %@", sql, [database lastErrorCode], [database lastErrorMessage]);
@@ -177,17 +177,17 @@
         @" WHERE " @LC_COLUMN_NAME_TIME @" = (SELECT min(" @LC_COLUMN_NAME_TIME @") FROM " @LC_TABLE_NAME @")";
 
         BOOL success = [database executeUpdate:sql,
-                        [NSNumber numberWithDouble:[location.time timeIntervalSince1970]],
-                        location.accuracy,
-                        location.speed,
-                        location.heading,
-                        location.altitude,
-                        location.latitude,
-                        location.longitude,
-                        location.provider ?: [NSNull null],
-                        location.service_provider ?: [NSNull null],
-                        location.debug ? @(1) : @(0)
-                        ];
+            [NSNumber numberWithDouble:[location.time timeIntervalSince1970]],
+            location.accuracy,
+            location.speed,
+            location.heading,
+            location.altitude,
+            location.latitude,
+            location.longitude,
+            location.provider ?: [NSNull null],
+            location.service_provider ?: [NSNull null],
+            location.debug ? @(1) : @(0)
+        ];
         
         if (success) {
             locationId = [NSNumber numberWithLongLong:[database lastInsertRowId]];

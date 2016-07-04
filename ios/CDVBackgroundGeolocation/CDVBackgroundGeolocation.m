@@ -16,11 +16,11 @@
 
 @implementation CDVBackgroundGeolocation {
     FMDBLogger *sqliteLogger;
+    NSString* syncCallbackId;
+    NSString* locationModeCallbackId;
+    NSMutableArray* stationaryRegionListeners;
+    BackgroundGeolocationDelegate* bgDelegate;
 }
-
-@synthesize syncCallbackId;
-@synthesize bgDelegate;
-@synthesize stationaryRegionListeners;
 
 - (void)pluginInitialize
 {
@@ -55,14 +55,14 @@
 {
     [self.commandDelegate runInBackground:^{
         Config* config = [Config fromDictionary:[command.arguments objectAtIndex:0]];
-        self.syncCallbackId = command.callbackId;
+        syncCallbackId = command.callbackId;
         
         if (config.isDebugging) {
             if (sqliteLogger == nil) {
                 sqliteLogger = [[FMDBLogger alloc] initWithLogDirectory:[self applicationFilesDirectory]];
-                sqliteLogger.saveThreshold     = 500;
-                sqliteLogger.saveInterval      = 60;               // 60 seconds
-                sqliteLogger.maxAge            = 60 * 60 * 24 * 7; //  7 days
+                sqliteLogger.saveThreshold     = 5;
+                sqliteLogger.saveInterval      = 0;
+                sqliteLogger.maxAge            = 60 * 60 * 24;     //  1 day
                 sqliteLogger.deleteInterval    = 60 * 5;           //  5 minutes
                 sqliteLogger.deleteOnEverySave = NO;
                 
@@ -138,10 +138,10 @@
 - (void) addStationaryRegionListener:(CDVInvokedUrlCommand*)command
 {
     [self.commandDelegate runInBackground:^{
-        if (self.stationaryRegionListeners == nil) {
-            self.stationaryRegionListeners = [[NSMutableArray alloc] init];
+        if (stationaryRegionListeners == nil) {
+            stationaryRegionListeners = [[NSMutableArray alloc] init];
         }
-        [self.stationaryRegionListeners addObject:command.callbackId];
+        [stationaryRegionListeners addObject:command.callbackId];
         NSMutableDictionary* stationaryLocation = [bgDelegate getStationaryLocation];
         if (stationaryLocation != nil) {
             // TODO: do this in background thread
@@ -195,12 +195,21 @@
 
 - (void) watchLocationMode:(CDVInvokedUrlCommand*)command
 {
-    // TODO: yet to be implemented
+    [self.commandDelegate runInBackground:^{
+        locationModeCallbackId = command.callbackId;
+        [self addObserver:self forKeyPath:@"bgDelegate.authStatus" options:NSKeyValueObservingOptionNew context:nil];
+    }];
 }
 
 - (void) stopWatchingLocationMode:(CDVInvokedUrlCommand*)command
 {
-     // TODO: yet to be implemented
+    [self.commandDelegate runInBackground:^{
+        @try {
+            [self removeObserver:self forKeyPath:@"bgDelegate.authStatus"];
+        }
+        @catch (NSException * __unused exception) {}
+        locationModeCallbackId = nil;
+    }];
 }
 
 - (void) getLocations:(CDVInvokedUrlCommand*)command
@@ -284,39 +293,54 @@
     [bgDelegate onAppTerminate];
 }
 
--(void (^)(NSMutableDictionary *location)) createLocationChangedHandler {
+-(void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
+{
+    if ([keyPath isEqualToString:@"bgDelegate.authStatus"]) {
+        if (locationModeCallbackId != nil) {
+            BGAuthorizationStatus authStatus = [[change valueForKey:@"new"] integerValue];
+            CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:(authStatus == ALLOWED) ? YES : NO];
+            [result setKeepCallbackAsBool:YES];
+            [self.commandDelegate sendPluginResult:result callbackId:locationModeCallbackId];
+        }
+    }
+}
+
+-(void (^)(NSMutableDictionary *location)) createLocationChangedHandler
+{
     return ^(NSMutableDictionary *location) {
         DDLogDebug(@"CDVBackgroundGeolocation onLocationChanged");
         CDVPluginResult* result = nil;
         result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:location];
         [result setKeepCallbackAsBool:YES];
-        [self.commandDelegate sendPluginResult:result callbackId:self.syncCallbackId];
+        [self.commandDelegate sendPluginResult:result callbackId:syncCallbackId];
     };
 }
 
--(void (^)(NSMutableDictionary *location)) createStationaryChangedHandler {
+-(void (^)(NSMutableDictionary *location)) createStationaryChangedHandler
+{
     return ^(NSMutableDictionary *location) {
         DDLogDebug(@"CDVBackgroundGeolocation onStationaryChanged");
 
-        if (![self.stationaryRegionListeners count]) {
+        if (![stationaryRegionListeners count]) {
             return;
         }
        
         CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:location];
         [result setKeepCallbackAsBool:YES];
-        for (NSString *callbackId in self.stationaryRegionListeners) {
+        for (NSString *callbackId in stationaryRegionListeners) {
             [self.commandDelegate sendPluginResult:result callbackId:callbackId];
         }
     };
 }
 
--(void (^)(NSError *error)) createErrorHandler {
+-(void (^)(NSError *error)) createErrorHandler
+{
     return ^(NSError *error) {
         DDLogError(@"CDVBackgroundGeolocation onError");
         CDVPluginResult* result = nil;
         result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:[error userInfo]];
         [result setKeepCallbackAsBool:YES];
-        [self.commandDelegate sendPluginResult:result callbackId:self.syncCallbackId];
+        [self.commandDelegate sendPluginResult:result callbackId:syncCallbackId];
     };
 }
 

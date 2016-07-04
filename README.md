@@ -206,7 +206,7 @@ Platform: iOS, Android
 Show system settings to allow configuration of current location sources.
 
 ### backgroundGeolocation.watchLocationMode(success, fail)
-Platform: Android
+Platform: iOS, Android
 
 Method can be used to detect user changes in location services settings.
 If user enable or disable location services then success callback will be executed.
@@ -217,7 +217,7 @@ Success callback parameter | Type | Description
 `enabled` | `Boolean` | true/false (true when location services are enabled)
 
 ### backgroundGeolocation.stopWatchingLocationMode()
-Platform: Android
+Platform: iOS, Android
 
 Stop watching for location mode changes.
 
@@ -267,7 +267,7 @@ Calling switchMode you can override plugin behavior and force plugin to switch i
 In **FOREGROUND** mode plugin uses iOS local manager to receive locations and behavior is affected
 by `option.desiredAccuracy` and `option.distanceFilter`.
 
-In **BACKGROUND** mode plugin uses significant changes and region monitoring to recieve locations
+In **BACKGROUND** mode plugin uses significant changes and region monitoring to receive locations
 and uses `option.stationaryRadius` only.
 
 ```
@@ -295,7 +295,7 @@ backgroundGeolocation.configure(callbackFn, failureFn, {
     locationProvider: backgroundGeolocation.provider.ANDROID_ACTIVITY_PROVIDER,
     interval: 60000, // <!-- poll for position every minute
     fastestInterval: 120000,
-    url: 'http://server_ip:port/path',
+    url: 'http://server:port/path',
     httpHeaders: {
         "X-FOO": "bar"
     }

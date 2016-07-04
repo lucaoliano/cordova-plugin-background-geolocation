@@ -3,6 +3,7 @@
 ### [3.0.0] - unreleased
 ### Added
 - iOS limit maximum number of locations in db
+- iOS watchLocationMode and stopWatchingLocationMode
 
 ### Changed
 - deprecating deleteAllLocations

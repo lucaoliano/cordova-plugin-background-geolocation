@@ -14,10 +14,10 @@
 #import <AudioToolbox/AudioToolbox.h>
 #import "Config.h"
 
-enum BGLocationStatus {
-    PERMISSIONDENIED = 1,
-    POSITIONUNAVAILABLE,
-    TIMEOUT
+enum BGAuthorizationStatus {
+    NOT_DETERMINED = 0,
+    ALLOWED,
+    DENIED
 };
 
 enum BGOperationMode {
@@ -25,11 +25,12 @@ enum BGOperationMode {
     FOREGROUND = 1
 };
 
-typedef NSUInteger BGLocationStatus;
+typedef NSUInteger BGAuthorizationStatus;
 typedef NSUInteger BGOperationMode;
 
 @interface BackgroundGeolocationDelegate : NSObject
 
+@property BGAuthorizationStatus authStatus;
 @property (copy) void (^onLocationChanged) (NSMutableDictionary *location);
 @property (copy) void (^onStationaryChanged) (NSMutableDictionary *location);
 @property (copy) void (^onError) (NSError *error);
@@ -42,8 +43,6 @@ typedef NSUInteger BGOperationMode;
 - (void) showAppSettings;
 - (void) showLocationSettings;
 - (void) switchMode:(BGOperationMode)mode;
-//- (void) watchLocationMode:(CDVInvokedUrlCommand*)command;
-- (void) stopWatchingLocationMode;
 - (NSMutableDictionary*)getStationaryLocation;
 - (NSArray<NSMutableDictionary*>*) getLocations;
 - (BOOL) deleteLocation:(NSNumber*)locationId;

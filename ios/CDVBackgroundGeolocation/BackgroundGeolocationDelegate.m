@@ -73,6 +73,7 @@ enum {
     Config* _config;
 }
 
+
 - (id) init
 {
     self = [super init];
@@ -80,6 +81,8 @@ enum {
     if (self == nil) {
         return self;
     }
+
+    self.authStatus = NOT_DETERMINED;
     
     // background location cache, for when no network is detected.
     locationManager = [[CLLocationManager alloc] init];
@@ -126,7 +129,7 @@ enum {
     
     DDLogDebug(@"%@", config);
     
-    locationManager.pausesLocationUpdatesAutomatically = NO;
+    locationManager.pausesLocationUpdatesAutomatically = YES;
     locationManager.activityType = [_config decodeActivityType];
     locationManager.distanceFilter = _config.distanceFilter; // meters
     locationManager.desiredAccuracy = [_config decodeDesiredAccuracy];
@@ -161,18 +164,18 @@ enum {
         authStatus = [CLLocationManager authorizationStatus];
 #ifdef __IPHONE_8_0
         if (authStatus == kCLAuthorizationStatusDenied) {
-            NSDictionary *errorDictionary = @{ @"code": [NSNumber numberWithInt:PERMISSIONDENIED], @"message" : @LOCATION_DENIED };
+            NSDictionary *errorDictionary = @{ @"code": [NSNumber numberWithInt:DENIED], @"message" : @LOCATION_DENIED };
             if (outError != NULL) {
-                *outError = [NSError errorWithDomain:ErrorDomain code:PERMISSIONDENIED userInfo:errorDictionary];
+                *outError = [NSError errorWithDomain:ErrorDomain code:DENIED userInfo:errorDictionary];
             }
             
             return NO;
         }
         
         if (authStatus == kCLAuthorizationStatusRestricted) {
-            NSDictionary *errorDictionary = @{ @"code": [NSNumber numberWithInt:PERMISSIONDENIED], @"message" : @LOCATION_RESTRICTED };
+            NSDictionary *errorDictionary = @{ @"code": [NSNumber numberWithInt:DENIED], @"message" : @LOCATION_RESTRICTED };
             if (outError != NULL) {
-                *outError = [NSError errorWithDomain:ErrorDomain code:PERMISSIONDENIED userInfo:errorDictionary];
+                *outError = [NSError errorWithDomain:ErrorDomain code:DENIED userInfo:errorDictionary];
             }
             
             return NO;
@@ -610,7 +613,7 @@ enum {
         case kCLErrorGeocodeCanceled:
             break;
         case kCLErrorDenied:
-            [self stop:nil];
+            self.authStatus = DENIED;
             break;
     }
     
@@ -624,7 +627,19 @@ enum {
     if (_config.isDebugging) {
         [self notify:[NSString stringWithFormat:@"Authorization status changed %u", status]];
     }
-    // TODO: add logic to start/stop service base on user authorization
+
+    switch(status) {
+        case kCLAuthorizationStatusRestricted:
+        case kCLAuthorizationStatusDenied:
+            self.authStatus = DENIED;
+            break;
+        case kCLAuthorizationStatusAuthorizedAlways:
+            self.authStatus = ALLOWED;
+            break;
+        default:
+            break;
+    }
+
 }
 
 - (void) stopUpdatingLocation

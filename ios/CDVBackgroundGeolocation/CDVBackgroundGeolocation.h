@@ -14,9 +14,9 @@
 
 @interface CDVBackgroundGeolocation : CDVPlugin
 
-@property (nonatomic, strong) NSString* syncCallbackId;
-@property (nonatomic, strong) NSMutableArray* stationaryRegionListeners;
-@property (nonatomic, strong) BackgroundGeolocationDelegate* bgDelegate;
+//@property (nonatomic, strong) NSString* syncCallbackId;
+//@property (nonatomic, strong) NSMutableArray* stationaryRegionListeners;
+//@property (nonatomic, strong) BackgroundGeolocationDelegate* bgDelegate;
 
 - (void) configure:(CDVInvokedUrlCommand*)command;
 - (void) start:(CDVInvokedUrlCommand*)command;
