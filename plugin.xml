@@ -131,10 +131,14 @@
         <source-file src="ios/CDVBackgroundGeolocation/BackgroundTaskManager.m" />
         <header-file src="ios/CDVBackgroundGeolocation/CDVBackgroundGeolocation.h" />
         <source-file src="ios/CDVBackgroundGeolocation/CDVBackgroundGeolocation.m" />
+        <header-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack.h" />
+        <source-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack.m" />      
         <header-file src="ios/CDVBackgroundGeolocation/Config.h" />
         <source-file src="ios/CDVBackgroundGeolocation/Config.m" />
         <header-file src="ios/CDVBackgroundGeolocation/FMDB.h" />
         <source-file src="ios/CDVBackgroundGeolocation/FMDB.m" />
+        <header-file src="ios/CDVBackgroundGeolocation/FMDBLogger.h" />
+        <source-file src="ios/CDVBackgroundGeolocation/FMDBLogger.m" />
         <header-file src="ios/CDVBackgroundGeolocation/GeolocationOpenHelper.h" />
         <source-file src="ios/CDVBackgroundGeolocation/GeolocationOpenHelper.m" />
         <header-file src="ios/CDVBackgroundGeolocation/Location.h" />
@@ -149,24 +153,5 @@
         <source-file src="ios/CDVBackgroundGeolocation/SQLiteLocationDAO.m" />
         <header-file src="ios/CDVBackgroundGeolocation/SQLiteOpenHelper.h" />
         <source-file src="ios/CDVBackgroundGeolocation/SQLiteOpenHelper.m" />
-        <header-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/CocoaLumberjack.h" />
-        <header-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/DDAbstractDatabaseLogger.h" />
-        <source-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/DDAbstractDatabaseLogger.m" />
-        <header-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/DDASLLogCapture.h" />
-        <source-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/DDASLLogCapture.m" />
-        <header-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/DDASLLogger.h" />
-        <source-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/DDASLLogger.m" />
-        <header-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/DDAssertMacros.h" />
-        <header-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/DDFileLogger.h" />
-        <source-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/DDFileLogger.m" />
-        <header-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/DDLegacyMacros.h" />
-        <header-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/DDLog.h" />
-        <source-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/DDLog.m" />
-        <header-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/DDLog+LOGV.h" />
-        <header-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/DDLogMacros.h" />
-        <header-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/DDTTYLogger.h" />
-        <source-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/DDTTYLogger.m" />
-        <header-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/FMDBLogger.h" />
-        <source-file src="ios/CDVBackgroundGeolocation/CocoaLumberjack/FMDBLogger.m" />
      </platform>
 </plugin>

@@ -104,8 +104,7 @@ function onDeviceReady () {
         desiredAccuracy: 10,
         stationaryRadius: 20,
         distanceFilter: 30,
-        debug: true, // <-- enable this hear sounds for background-geolocation life-cycle.
-        stopOnTerminate: false, // <-- enable this to clear background location settings when the app terminates
+        interval: 60000
     });
 
     // Turn ON the background-geolocation system.  The user will be tracked whenever they suspend the app.
@@ -230,24 +229,21 @@ Success callback parameter | Type | Description
 -------------------------- | ---- | -----------
 `locations` | `Array` | collection of stored locations
 
-Locations are stored when:
-
-1. ```config.stopOnTerminate``` is false and main activity was killed by the system
-or
-2. ```option.debug``` is true
-
-Debug locations can be filtered:
-
 ```javascript
-[].filter.call(locations, function(location) {
-    return location.debug === false;
-});
+backgroundGeolocation.getLocations(
+  function (locations) {
+    console.log(locations);
+  }
+);
 ```
 
 ### backgroundGeolocation.deleteLocation(locationId, success, fail)
 Platform: iOS, Android
 
-Delete stored location by given locationId.
+Delete location with locationId.
+
+Note: Locations are not actually deleted from database to avoid gaps in locationId numbering.
+Instead locations are marked as deleted. Locations marked as deleted will not appear in output of `backgroundGeolocation.getLocations`.
 
 ### backgroundGeolocation.deleteAllLocations(success, fail)
 Deprecated warning: This method is **deprecated** and should not be used.
@@ -278,45 +274,80 @@ backgroundGeolocation.switchMode(backgroundGeolocation.mode.FOREGROUND);
 backgroundGeolocation.switchMode(backgroundGeolocation.mode.BACKGROUND);
 ```
 
-## Example config
+## Real world example
 
-### Android:
-
-```javascript
-backgroundGeolocation.configure(callbackFn, failureFn, {
-    desiredAccuracy: 10,
-    notificationIconColor: '#4CAF50',
-    notificationTitle: 'Background tracking',
-    notificationText: 'ENABLED',
-    notificationIconLarge: 'icon_large', //filename without extension
-    notificationIconSmall: 'icon_small', //filename without extension
-    debug: true, // <-- enable this hear sounds for background-geolocation life-cycle.
-    stopOnTerminate: false, // <-- enable this to clear background location settings when the app terminates
-    locationProvider: backgroundGeolocation.provider.ANDROID_ACTIVITY_PROVIDER,
-    interval: 60000, // <!-- poll for position every minute
-    fastestInterval: 120000,
-    url: 'http://server:port/path',
-    httpHeaders: {
-        "X-FOO": "bar"
-    }
-});
-```
-
-### iOS:
-
-```javascript
+``` javascript
 backgroundGeolocation.configure(callbackFn, failureFn, {
     desiredAccuracy: 10,
     stationaryRadius: 20,
     distanceFilter: 30,
-    activityType: 'AutomotiveNavigation',
-    debug: true, // <-- enable this hear sounds for background-geolocation life-cycle.
-    stopOnTerminate: false // <-- enable this to clear background location settings when the app terminates
+    url: 'http://192.168.81.15:3000/locations',
+    httpHeaders: { 'X-FOO': 'bar' },
+    maxLocations: 1000,
+    // Android only section
+    locationProvider: backgroundGeolocation.provider.ANDROID_ACTIVITY_PROVIDER,
+    interval: 60000,
+    fastestInterval: 5000,
+    activitiesInterval: 10000,
+    notificationTitle: 'Background tracking',
+    notificationText: 'enabled',
+    notificationIconColor: '#FEDD1E',
+    notificationIconLarge: 'mappointer_large',
+    notificationIconSmall: 'mappointer_small'
+});
+
+backgroundGeolocation.watchLocationMode(
+  function (enabled) {
+    if (enabled) {
+      // location service are now enabled
+      // time to change UI to reflect that
+    } else {
+      // location service are now disabled or we don't have permission
+      // time to change UI to reflect that
+    }
+  },
+  function (error) {
+    console.log('Error watching location mode. Error:' + error);
+  }
+);
+
+backgroundGeolocation.isLocationEnabled(function (enabled) {
+  if (enabled) {
+    backgroundGeolocation.start(
+      function () {
+        // service started successfully
+        // you should adjust your app UI for example change switch element to indicate
+        // that service is running
+      },
+      function (error) {
+        // Tracking has not started because of error
+        // you should adjust your app UI for example change switch element to indicate
+        // that service is not running
+        if (error.code === 2) {
+          if (window.confirm('Not authorized for location updates. Would you like to open app settings?')) {
+            backgroundGeolocation.showAppSettings();
+          }
+        } else {
+          window.alert('Start failed: ' + error.message);  
+        }
+      }
+    );
+  } else {
+    // Location services are disabled
+    if (window.confirm('Location is disabled. Would you like to open location settings?')) {
+      backgroundGeolocation.showLocationSettings();
+    }
+  }
 });
 ```
+
 ## HTTP locations posting
 
-When options `url` and optional `httpHeaders` are set, plugin will try to POST locations array as JSON to given url. If server is not responding or response status code is not 200, locations will be persisted into sqlite db. Stored locations and later retrieved with `backgroundGeolocation.getLocations` method. Request body is always array, even when only one location is sent.
+If `option.url` is not defined, all locations updates are recorded in local db. When App is in foreground or background in addition to storing location in local db, location callback function is triggered. Number of location stored in db is limited by `option.maxLocations` a never exceeds this number. Instead old locations are replaced by new ones.
+
+When `option.url` is defined. Location updates are also stored in local db. In addition, each location is also immediately posted to url defined by `option.url`. If post is successful, the location is marked as deleted in local db. All failed to post locations will be coalesced and send in some time later in one single batch. <TO_BE_DEFINED>Batch sync takes place only as per interval defined in IntervalForPost config option.</TO_BE_DEFINED>.
+
+Request body of posted locations is always array, even when only one location is sent.
 
 ### Example of express (nodejs) server
 ```javascript
@@ -351,11 +382,9 @@ Since the plugin uses **iOS** significant-changes API, the plugin cannot detect 
 
 ### Android
 
-Android **WILL** execute your configured ```callbackFn```. This is the main difference from original christocracy plugin. Android is using intents to do so.
+Android **WILL** execute your configured ```callbackFn```. This is the main difference from original christocracy plugin.
 
 On Android devices it is required to have a notification in the drawer because it's a "foreground service".  This gives it high priority, decreasing probability of OS killing it. Check [wiki](https://github.com/mauron85/cordova-plugin-background-geolocation/wiki/Android-implementation) for explanation.
-
-If main activity is killed by the system and ```stopOnTerminate``` option is false, plugin will store locations into database. Stored locations can be retrieved later with ```getAllLocations``` method. Locations are also stored, when ```debug``` option is **true**. However in this case all stored locations, are flagged with ```debug: true``` and can be easily filtered.
 
 #### Custom ROMs
 
@@ -405,7 +434,33 @@ With Adobe® PhoneGap™ Build icons must be placed into ```locales/android/draw
 
 Plugin will not work in XDK emulator ('Unimplemented API Emulation: BackgroundGeolocation.start' in emulator). But will work on real device.
 
-## Debugging sounds
+## Debugging
+
+When `option.debug` is true, plugin logs all activity into database.
+Following snippet will retrieve last 100 log entries.
+
+```javascript
+function padLeft(nr, n, str) {
+  return Array(n-String(nr).length+1).join(str||'0')+nr;
+}
+
+backgroundGeolocation.getLogEntries(100, function(logEntries) {
+  var output = [].map.call(logEntries, function(logEntry) {
+      var d = new Date(logEntry.timestamp * 1000);
+      var dateFormatted = [
+        [d.getFullYear(), padLeft(d.getMonth()+1,2), padLeft(d.getDate(),2)].join('/'),
+        [padLeft(d.getHours(),2), padLeft(d.getMinutes(),2), padLeft(d.getSeconds(),2)].join(':')
+        ].join(' ');
+      return ([
+        '[' + dateFormatted + ']',
+        logEntry.message
+      ].join(' '));
+  });
+  console.log(output.join('\n'));
+});
+```
+
+### Debugging sounds
 |    | *ios* | *android* |
 | ------------- | ------------- | ------------- |
 | Exit stationary region  | Calendar event notification sound  | dialtone beep-beep-beep  |

@@ -1,5 +1,5 @@
 #import <Foundation/Foundation.h>
-#import "DDAbstractDatabaseLogger.h"
+#import "CocoaLumberjack.h"
 
 @class FMDatabase;
 

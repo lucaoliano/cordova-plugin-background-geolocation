@@ -18,7 +18,6 @@
 !/ios/CDVBackgroundGeolocation.xcodeproj/project.pbxproj
 !/ios/CDVBackgroundGeolocation
 !/ios/CDVBackgroundGeolocationTests
-!/ios/CocoaLumberjack
 !/ios/CordovaLib
 /ios/CordovaLib/*
 !/ios/CordovaLib/README.md
