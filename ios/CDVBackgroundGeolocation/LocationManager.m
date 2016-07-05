@@ -1,5 +1,5 @@
 ////
-//  BackgroundGeolocationDelegate
+//  LocationManager
 //
 //  Created by Marian Hello on 04/06/16.
 //  Version 2.0.0
@@ -11,7 +11,7 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "BackgroundGeolocationDelegate.h"
+#import "LocationManager.h"
 #import "SQLiteLocationDAO.h"
 #import "BackgroundTaskManager.h"
 #import "Logging.h"
@@ -43,10 +43,10 @@ enum {
     maxLocationAgeInSeconds = 30
 };
 
-@interface BackgroundGeolocationDelegate () <CLLocationManagerDelegate>
+@interface LocationManager () <CLLocationManagerDelegate>
 @end
 
-@implementation BackgroundGeolocationDelegate {
+@implementation LocationManager {
     BOOL isStarted;
     BOOL isUpdatingLocation;
     BOOL isAcquiringStationaryLocation;
@@ -81,14 +81,12 @@ enum {
     if (self == nil) {
         return self;
     }
-
-    self.authStatus = NOT_DETERMINED;
-    
+   
     // background location cache, for when no network is detected.
     locationManager = [[CLLocationManager alloc] init];
     
     if (SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"9.0")) {
-        DDLogDebug(@"BackgroundGeolocationDelegate iOS9 detected");
+        DDLogDebug(@"LocationManager iOS9 detected");
         locationManager.allowsBackgroundLocationUpdates = YES;
     }
     
@@ -124,7 +122,7 @@ enum {
  */
 - (BOOL) configure:(Config*)config error:(NSError * __autoreleasing *)outError
 {
-    DDLogVerbose(@"BackgroundGeolocationDelegate configure");
+    DDLogVerbose(@"LocationManager configure");
     _config = config;
     
     DDLogDebug(@"%@", config);
@@ -152,7 +150,7 @@ enum {
  */
 - (BOOL) start:(NSError * __autoreleasing *)outError
 {
-    DDLogInfo(@"BackgroundGeolocationDelegate will start: %d", isStarted);
+    DDLogInfo(@"LocationManager will start: %d", isStarted);
     
     if (isStarted) {
         return NO;
@@ -187,7 +185,7 @@ enum {
         
         if (authStatus == kCLAuthorizationStatusNotDetermined) {
             if ([locationManager respondsToSelector:@selector(requestAlwaysAuthorization)]) {  //iOS 8.0+
-                DDLogVerbose(@"BackgroundGeolocationDelegate requestAlwaysAuthorization");
+                DDLogVerbose(@"LocationManager requestAlwaysAuthorization");
                 [locationManager requestAlwaysAuthorization];
             }
         }
@@ -205,7 +203,7 @@ enum {
  */
 - (BOOL) stop:(NSError * __autoreleasing *)outError
 {
-    DDLogInfo(@"BackgroundGeolocationDelegate stop");
+    DDLogInfo(@"LocationManager stop");
     
     if (!isStarted) {
         return YES;
@@ -225,7 +223,7 @@ enum {
  */
 - (BOOL) finish
 {
-    DDLogInfo(@"BackgroundGeolocationDelegate finish");
+    DDLogInfo(@"LocationManager finish");
     [self stopBackgroundTask];
     return YES;
 }
@@ -235,7 +233,7 @@ enum {
  */
 - (void) switchMode:(BGOperationMode)mode
 {
-    DDLogInfo(@"BackgroundGeolocationDelegate switchMode %lu", (unsigned long)mode);
+    DDLogInfo(@"LocationManager switchMode %lu", (unsigned long)mode);
 
     operationMode = mode;
 
@@ -344,7 +342,7 @@ enum {
 
 - (void) queue:(Location*)location
 {
-    DDLogDebug(@"BackgroundGeolocationDelegate queue %@", location);
+    DDLogDebug(@"LocationManager queue %@", location);
     
     [locationQueue addObject:location];
     [self flushQueue];
@@ -355,7 +353,7 @@ enum {
     // Sanity-check the duration of last bgTask:  If greater than 30s, kill it.
     if (bgTask != UIBackgroundTaskInvalid) {
         if (-[lastBgTaskAt timeIntervalSinceNow] > 30.0) {
-            DDLogWarn(@"BackgroundGeolocationDelegate#flushQueue has to kill an out-standing background-task!");
+            DDLogWarn(@"LocationManager#flushQueue has to kill an out-standing background-task!");
             if (_config.isDebugging) {
                 [self notify:@"Outstanding bg-task was force-killed"];
             }
@@ -416,7 +414,7 @@ enum {
  */
 - (void) sync:(Location*)location
 {
-    DDLogInfo(@"BackgroundGeolocationDelegate#sync %@", location);
+    DDLogInfo(@"LocationManager#sync %@", location);
     if (_config.isDebugging) {
         [self notify:[NSString stringWithFormat:@"Location update: %s\nSPD: %0.0f | DF: %ld | ACY: %0.0f",
             ((operationMode == FOREGROUND) ? "FG" : "BG"),
@@ -432,25 +430,29 @@ enum {
     if ([location.type isEqualToString:@"stationary"]) {
         [self fireStationaryRegionListeners:[location toDictionary]];
     } else if ([location.type isEqualToString:@"current"]) {
-        self.onLocationChanged([location toDictionary]);
+        if (self.delegate && [self.delegate respondsToSelector:@selector(onLocationChanged:)]) {
+            [self.delegate onLocationChanged:[location toDictionary]];
+        }
     } else {
-        DDLogError(@"BackgroundGeolocationDelegate#sync could not determine location_type.");
+        DDLogError(@"LocationManager#sync could not determine location_type.");
         [self stopBackgroundTask];
     }
 }
 
 - (void) fireStationaryRegionListeners:(NSMutableDictionary*)data
 {
-    DDLogDebug(@"BackgroundGeolocationDelegate#fireStationaryRegionListener");
+    DDLogDebug(@"LocationManager#fireStationaryRegionListener");
     // Any javascript stationaryRegion event-listeners?
-    [data setObject:[NSNumber numberWithDouble:_config.stationaryRadius] forKey:@"radius"];
-    self.onStationaryChanged(data);
+    if (self.delegate && [self.delegate respondsToSelector:@selector(onStationaryChanged:)]) {
+        [data setObject:[NSNumber numberWithDouble:_config.stationaryRadius] forKey:@"radius"];
+        [self.delegate onStationaryChanged:data];
+    }
 //    [self stopBackgroundTask];
 }
 
 - (void) locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations
 {
-    DDLogDebug(@"BackgroundGeolocationDelegate didUpdateLocations (operationMode: %lu)", (unsigned long)operationMode);
+    DDLogDebug(@"LocationManager didUpdateLocations (operationMode: %lu)", (unsigned long)operationMode);
     
     locationError = nil;
     BGOperationMode actAsInMode = operationMode;
@@ -505,7 +507,7 @@ enum {
         }
 
         if ([lastLocation.accuracy doubleValue] <= [[NSNumber numberWithInteger:_config.desiredAccuracy] doubleValue]) {
-            DDLogDebug(@"BackgroundGeolocationDelegate found most accurate stationary before timeout");
+            DDLogDebug(@"LocationManager found most accurate stationary before timeout");
         } else if (-[aquireStartTime timeIntervalSinceNow] < maxLocationWaitTimeInSeconds) {
             // we still have time to aquire better location
             return;
@@ -525,7 +527,7 @@ enum {
         }
 
         if ([lastLocation.accuracy doubleValue] <= [[NSNumber numberWithInteger:_config.desiredAccuracy] doubleValue]) {
-            DDLogDebug(@"BackgroundGeolocationDelegate found most accurate location before timeout");
+            DDLogDebug(@"LocationManager found most accurate location before timeout");
         } else if (-[aquireStartTime timeIntervalSinceNow] < maxLocationWaitTimeInSeconds) {
             // we still have time to aquire better location
             return;
@@ -545,7 +547,7 @@ enum {
         // Adjust distanceFilter incrementally based upon current speed
         float newDistanceFilter = [self calculateDistanceFilter:[lastLocation.speed floatValue]];
         if (newDistanceFilter != locationManager.distanceFilter) {
-            DDLogInfo(@"BackgroundGeolocationDelegate updated distanceFilter, new: %f, old: %f", newDistanceFilter, locationManager.distanceFilter);
+            DDLogInfo(@"LocationManager updated distanceFilter, new: %f, old: %f", newDistanceFilter, locationManager.distanceFilter);
             locationManager.distanceFilter = newDistanceFilter;
             [self startUpdatingLocation];
         }
@@ -568,7 +570,7 @@ enum {
     CLLocationDistance radius = [region radius];
     CLLocationCoordinate2D coordinate = [region center];
 
-    DDLogDebug(@"BackgroundGeolocationDelegate didExitRegion {%f,%f,%f}", coordinate.latitude, coordinate.longitude, radius);
+    DDLogDebug(@"LocationManager didExitRegion {%f,%f,%f}", coordinate.latitude, coordinate.longitude, radius);
     if (_config.isDebugging) {
         AudioServicesPlaySystemSound (exitRegionSound);
         [self notify:@"Exit stationary region"];
@@ -578,7 +580,7 @@ enum {
 
 - (void) locationManagerDidPauseLocationUpdates:(CLLocationManager *)manager
 {
-    DDLogDebug(@"BackgroundGeolocationDelegate location updates paused");
+    DDLogDebug(@"LocationManager location updates paused");
     if (_config.isDebugging) {
         [self notify:@"Location updates paused"];
     }
@@ -586,7 +588,7 @@ enum {
 
 - (void) locationManagerDidResumeLocationUpdates:(CLLocationManager *)manager
 {
-    DDLogDebug(@"BackgroundGeolocationDelegate location updates resumed");
+    DDLogDebug(@"LocationManager location updates resumed");
     if (_config.isDebugging) {
         [self notify:@"Location updates resumed b"];
     }
@@ -594,7 +596,7 @@ enum {
 
 - (void) locationManager:(CLLocationManager *)manager didFailWithError:(NSError *)error
 {
-    DDLogError(@"BackgroundGeolocationDelegate didFailWithError: %@", error);
+    DDLogError(@"LocationManager didFailWithError: %@", error);
     if (_config.isDebugging) {
         AudioServicesPlaySystemSound (locationErrorSound);
         [self notify:[NSString stringWithFormat:@"Location error: %@", error.localizedDescription]];
@@ -613,17 +615,17 @@ enum {
         case kCLErrorGeocodeCanceled:
             break;
         case kCLErrorDenied:
-            self.authStatus = DENIED;
             break;
     }
-    
-    self.onError(error);
-    
+
+    if (self.delegate && [self.delegate respondsToSelector:@selector(onError:)]) {
+        [self.delegate onError:error];
+    }
 }
 
 - (void) locationManager:(CLLocationManager *)manager didChangeAuthorizationStatus:(CLAuthorizationStatus)status
 {
-    DDLogInfo(@"BackgroundGeolocationDelegate didChangeAuthorizationStatus %u", status);
+    DDLogInfo(@"LocationManager didChangeAuthorizationStatus %u", status);
     if (_config.isDebugging) {
         [self notify:[NSString stringWithFormat:@"Authorization status changed %u", status]];
     }
@@ -631,10 +633,14 @@ enum {
     switch(status) {
         case kCLAuthorizationStatusRestricted:
         case kCLAuthorizationStatusDenied:
-            self.authStatus = DENIED;
+            if (self.delegate && [self.delegate respondsToSelector:@selector(onAuthorizationChanged:)]) {
+                [self.delegate onAuthorizationChanged:DENIED];
+            }
             break;
         case kCLAuthorizationStatusAuthorizedAlways:
-            self.authStatus = ALLOWED;
+            if (self.delegate && [self.delegate respondsToSelector:@selector(onAuthorizationChanged:)]) {
+                [self.delegate onAuthorizationChanged:ALLOWED];
+            }
             break;
         default:
             break;
@@ -673,7 +679,7 @@ enum {
  */
 - (void) startMonitoringStationaryRegion:(Location*)location {
     CLLocationCoordinate2D coord = [location coordinate];
-    DDLogDebug(@"BackgroundGeolocationDelegate startMonitoringStationaryRegion {%f,%f,%ld}", coord.latitude, coord.longitude, (long)_config.stationaryRadius);
+    DDLogDebug(@"LocationManager startMonitoringStationaryRegion {%f,%f,%ld}", coord.latitude, coord.longitude, (long)_config.stationaryRadius);
     
     if (_config.isDebugging) {
         AudioServicesPlaySystemSound (acquiredLocationSound);
@@ -681,7 +687,7 @@ enum {
     }
     
     [self stopMonitoringForRegion];
-    stationaryRegion = [[CLCircularRegion alloc] initWithCenter: coord radius:_config.stationaryRadius identifier:@"BackgroundGeolocationDelegate stationary region"];
+    stationaryRegion = [[CLCircularRegion alloc] initWithCenter: coord radius:_config.stationaryRadius identifier:@"LocationManager stationary region"];
     stationaryRegion.notifyOnExit = YES;
     [locationManager startMonitoringForRegion:stationaryRegion];
     stationarySince = [NSDate date];
@@ -718,7 +724,7 @@ enum {
     CLLocationCoordinate2D regionCenter = [stationaryRegion center];
     BOOL containsCoordinate = [stationaryRegion containsCoordinate:[location coordinate]];
 
-    DDLogVerbose(@"BackgroundGeolocationDelegate location {%@,%@} region {%f,%f,%f} contains: %d",
+    DDLogVerbose(@"LocationManager location {%@,%@} region {%f,%f,%f} contains: %d",
           location.latitude, location.longitude, regionCenter.latitude, regionCenter.longitude,
           [stationaryRegion radius], containsCoordinate);
 
@@ -762,7 +768,7 @@ enum {
         return YES;
     }
     
-    DDLogWarn(@"BackgroundGeolocationDelegate postJSON failed: code %ld error: %@", (long)urlResponse.statusCode, error.userInfo[@"NSLocalizedDescription"]);
+    DDLogWarn(@"LocationManager postJSON failed: code %ld error: %@", (long)urlResponse.statusCode, error.userInfo[@"NSLocalizedDescription"]);
     
     return NO;
 }
@@ -775,7 +781,7 @@ enum {
 - (void) onAppTerminate
 {
     if (_config.stopOnTerminate) {
-        DDLogInfo(@"BackgroundGeolocationDelegate is stopping on app terminate.");
+        DDLogInfo(@"LocationManager is stopping on app terminate.");
         [self stop:nil];
     } else {
         [self switchMode:BACKGROUND];

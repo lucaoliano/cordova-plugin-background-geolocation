@@ -125,8 +125,6 @@
         <framework src="AudioToolbox.framework" weak="true" />
         <framework src="AVFoundation.framework" weak="true" />
         <framework src="libsqlite3.dylib" weak="true" />
-        <header-file src="ios/CDVBackgroundGeolocation/BackgroundGeolocationDelegate.h" />
-        <source-file src="ios/CDVBackgroundGeolocation/BackgroundGeolocationDelegate.m" />
         <header-file src="ios/CDVBackgroundGeolocation/BackgroundTaskManager.h" />
         <source-file src="ios/CDVBackgroundGeolocation/BackgroundTaskManager.m" />
         <header-file src="ios/CDVBackgroundGeolocation/CDVBackgroundGeolocation.h" />
@@ -145,6 +143,8 @@
         <source-file src="ios/CDVBackgroundGeolocation/Location.m" />
         <header-file src="ios/CDVBackgroundGeolocation/LocationContract.h" />
         <source-file src="ios/CDVBackgroundGeolocation/LocationContract.m" />
+        <header-file src="ios/CDVBackgroundGeolocation/LocationManager.h" />
+        <source-file src="ios/CDVBackgroundGeolocation/LocationManager.m" />
         <header-file src="ios/CDVBackgroundGeolocation/Logging.h" />
         <source-file src="ios/CDVBackgroundGeolocation/Logging.m" />
         <header-file src="ios/CDVBackgroundGeolocation/SQLiteHelper.h" />

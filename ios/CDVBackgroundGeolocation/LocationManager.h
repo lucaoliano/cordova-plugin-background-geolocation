@@ -1,5 +1,5 @@
 //
-//  BackgroundGeolocationDelegate.h
+//  LocationManager.h
 //
 //  Created by Marian Hello on 04/06/16.
 //  Version 2.0.0
@@ -28,12 +28,18 @@ enum BGOperationMode {
 typedef NSUInteger BGAuthorizationStatus;
 typedef NSUInteger BGOperationMode;
 
-@interface BackgroundGeolocationDelegate : NSObject
+@protocol LocationManagerDelegate <NSObject>
 
-@property BGAuthorizationStatus authStatus;
-@property (copy) void (^onLocationChanged) (NSMutableDictionary *location);
-@property (copy) void (^onStationaryChanged) (NSMutableDictionary *location);
-@property (copy) void (^onError) (NSError *error);
+- (void) onAuthorizationChanged:(NSInteger)authStatus;
+- (void) onLocationChanged:(NSMutableDictionary*)location;
+- (void) onStationaryChanged:(NSMutableDictionary*)location;
+- (void) onError:(NSError*)error;
+
+@end
+
+@interface LocationManager : NSObject
+
+@property (weak, nonatomic) id<LocationManagerDelegate> delegate;
 
 - (BOOL) configure:(Config*)config error:(NSError * __autoreleasing *)outError;
 - (BOOL) start:(NSError * __autoreleasing *)outError;

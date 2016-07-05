@@ -437,7 +437,7 @@ Plugin will not work in XDK emulator ('Unimplemented API Emulation: BackgroundGe
 
 ## Debugging
 
-When `option.debug` is true, plugin logs all activity into database.
+When `option.debug` is true, plugin logs all activity into database. Logs are retained for one day.
 You can attach your device to the computer and print logs to console.
 
 * For iOS open Safari and select from menu `Develop` ➜ `Your Device name`

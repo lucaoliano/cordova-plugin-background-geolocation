@@ -17,7 +17,7 @@
 		412686331D271C5500F6D605 /* GeolocationOpenHelperTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 412686321D271C5500F6D605 /* GeolocationOpenHelperTests.m */; };
 		412A29631D07311B001EB0E5 /* CDVBackgroundGeolocation.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 412A29621D07311B001EB0E5 /* CDVBackgroundGeolocation.h */; };
 		412A29651D07311B001EB0E5 /* CDVBackgroundGeolocation.m in Sources */ = {isa = PBXBuildFile; fileRef = 412A29641D07311B001EB0E5 /* CDVBackgroundGeolocation.m */; };
-		412A29771D073BA6001EB0E5 /* BackgroundGeolocationDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 412A29761D073BA6001EB0E5 /* BackgroundGeolocationDelegate.m */; };
+		412A29771D073BA6001EB0E5 /* LocationManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 412A29761D073BA6001EB0E5 /* LocationManager.m */; };
 		413B8FA11D0B015600B836F5 /* Location.m in Sources */ = {isa = PBXBuildFile; fileRef = 413B8FA01D0B015600B836F5 /* Location.m */; };
 		413B8FB21D0B3A9600B836F5 /* SQLiteLocationDAOTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 413B8FB11D0B3A9600B836F5 /* SQLiteLocationDAOTests.m */; };
 		413B8FB41D0B3A9600B836F5 /* libCDVBackgroundGeolocation.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 412A295F1D07311B001EB0E5 /* libCDVBackgroundGeolocation.a */; };
@@ -103,8 +103,8 @@
 		412A29621D07311B001EB0E5 /* CDVBackgroundGeolocation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CDVBackgroundGeolocation.h; sourceTree = "<group>"; };
 		412A29641D07311B001EB0E5 /* CDVBackgroundGeolocation.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CDVBackgroundGeolocation.m; sourceTree = "<group>"; };
 		412A296C1D073716001EB0E5 /* CordovaLib.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = CordovaLib.xcodeproj; path = CordovaLib/CordovaLib.xcodeproj; sourceTree = "<group>"; };
-		412A29751D073BA6001EB0E5 /* BackgroundGeolocationDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BackgroundGeolocationDelegate.h; sourceTree = "<group>"; };
-		412A29761D073BA6001EB0E5 /* BackgroundGeolocationDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BackgroundGeolocationDelegate.m; sourceTree = "<group>"; };
+		412A29751D073BA6001EB0E5 /* LocationManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LocationManager.h; sourceTree = "<group>"; };
+		412A29761D073BA6001EB0E5 /* LocationManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LocationManager.m; sourceTree = "<group>"; };
 		413B8F9C1D0AD4D700B836F5 /* SQLiteLocationDAO.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SQLiteLocationDAO.h; sourceTree = "<group>"; };
 		413B8F9F1D0B012D00B836F5 /* Location.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Location.h; sourceTree = "<group>"; };
 		413B8FA01D0B015600B836F5 /* Location.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Location.m; sourceTree = "<group>"; };
@@ -187,8 +187,8 @@
 				411675DA1D2A64DC004BC2F4 /* FMDBLogger.m */,
 				411675AB1D2839BD004BC2F4 /* Logging.h */,
 				411675B61D284737004BC2F4 /* Logging.m */,
-				412A29751D073BA6001EB0E5 /* BackgroundGeolocationDelegate.h */,
-				412A29761D073BA6001EB0E5 /* BackgroundGeolocationDelegate.m */,
+				412A29751D073BA6001EB0E5 /* LocationManager.h */,
+				412A29761D073BA6001EB0E5 /* LocationManager.m */,
 				412A29621D07311B001EB0E5 /* CDVBackgroundGeolocation.h */,
 				412A29641D07311B001EB0E5 /* CDVBackgroundGeolocation.m */,
 				414D1A921D21B3B500B50F3D /* SQLiteHelper.h */,
@@ -377,7 +377,7 @@
 				411675041D2806A0004BC2F4 /* GeolocationOpenHelper.m in Sources */,
 				414D1A971D21B48600B50F3D /* SQLiteOpenHelper.m in Sources */,
 				412A29651D07311B001EB0E5 /* CDVBackgroundGeolocation.m in Sources */,
-				412A29771D073BA6001EB0E5 /* BackgroundGeolocationDelegate.m in Sources */,
+				412A29771D073BA6001EB0E5 /* LocationManager.m in Sources */,
 				411675DB1D2A64DC004BC2F4 /* CocoaLumberjack.m in Sources */,
 				417380081D0ED3600091738A /* BackgroundTaskManager.m in Sources */,
 				411675B71D284737004BC2F4 /* Logging.m in Sources */,
@@ -575,6 +575,7 @@
 				4116754C1D282BB6004BC2F4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		412A295A1D07311A001EB0E5 /* Build configuration list for PBXProject "CDVBackgroundGeolocation" */ = {
 			isa = XCConfigurationList;

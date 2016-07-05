@@ -2533,7 +2533,6 @@ BOOL doesAppRunInBackground() {
     #define DD_DEBUG NO
 #endif
 
-#define NSLogDebug(frmt, ...) do{ if(DD_DEBUG) NSLog((frmt), ##__VA_ARGS__); } while(0)
 
 // Specifies the maximum queue size of the logging thread.
 //
