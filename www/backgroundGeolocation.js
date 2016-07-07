@@ -34,11 +34,6 @@ var backgroundGeolocation = {
         PASSIVE: 10000
     },
 
-    /**
-     * @property {Object} config
-     */
-    config: {},
-
     configure: function(success, failure, config) {
         exec(success || emptyFnc,
             failure || emptyFnc,
@@ -190,7 +185,7 @@ var backgroundGeolocation = {
             failure || emptyFnc,
             'BackgroundGeolocation',
             'getLogEntries', [limit]);
-    }
+    }    
 };
 
 /* @Deprecated */

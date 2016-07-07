@@ -4,10 +4,12 @@
 ### Added
 - iOS limit maximum number of locations in db
 - iOS watchLocationMode and stopWatchingLocationMode
+- iOS autosync locations
 
 ### Changed
 - deprecating deleteAllLocations
 - iOS persist locations also when url option is not used
+- iOS dropping support for iOS < 4
 
 ### Fixed
 - iOS do not block js thread when posting locations

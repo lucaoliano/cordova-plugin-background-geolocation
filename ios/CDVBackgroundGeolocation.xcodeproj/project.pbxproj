@@ -30,6 +30,8 @@
 		417380081D0ED3600091738A /* BackgroundTaskManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 417380071D0ED3600091738A /* BackgroundTaskManager.m */; };
 		417858531D21B363003538C7 /* LocationContract.m in Sources */ = {isa = PBXBuildFile; fileRef = 417858521D21B363003538C7 /* LocationContract.m */; };
 		41CF4FFE1D0CBADE00460361 /* Config.m in Sources */ = {isa = PBXBuildFile; fileRef = 41CF4FFD1D0CBADE00460361 /* Config.m */; };
+		41F3D1CC1D2E79FB002448B2 /* LocationUploader.m in Sources */ = {isa = PBXBuildFile; fileRef = 41F3D1CB1D2E79FB002448B2 /* LocationUploader.m */; };
+		41F3D1D01D2EAD80002448B2 /* LocationUploaderTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 41F3D1CF1D2EAD80002448B2 /* LocationUploaderTests.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -126,6 +128,9 @@
 		417858521D21B363003538C7 /* LocationContract.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LocationContract.m; sourceTree = "<group>"; };
 		41CF4FFC1D0CBACC00460361 /* Config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Config.h; sourceTree = "<group>"; };
 		41CF4FFD1D0CBADE00460361 /* Config.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Config.m; sourceTree = "<group>"; };
+		41F3D1CA1D2E79A0002448B2 /* LocationUploader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LocationUploader.h; sourceTree = "<group>"; };
+		41F3D1CB1D2E79FB002448B2 /* LocationUploader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LocationUploader.m; sourceTree = "<group>"; };
+		41F3D1CF1D2EAD80002448B2 /* LocationUploaderTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LocationUploaderTests.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -189,6 +194,8 @@
 				411675B61D284737004BC2F4 /* Logging.m */,
 				412A29751D073BA6001EB0E5 /* LocationManager.h */,
 				412A29761D073BA6001EB0E5 /* LocationManager.m */,
+				41F3D1CA1D2E79A0002448B2 /* LocationUploader.h */,
+				41F3D1CB1D2E79FB002448B2 /* LocationUploader.m */,
 				412A29621D07311B001EB0E5 /* CDVBackgroundGeolocation.h */,
 				412A29641D07311B001EB0E5 /* CDVBackgroundGeolocation.m */,
 				414D1A921D21B3B500B50F3D /* SQLiteHelper.h */,
@@ -229,6 +236,7 @@
 				414D1A9D1D21B81800B50F3D /* SQLiteHelper.m */,
 				412686301D271C1700F6D605 /* SQLiteOpenHelperTests.m */,
 				412686321D271C5500F6D605 /* GeolocationOpenHelperTests.m */,
+				41F3D1CF1D2EAD80002448B2 /* LocationUploaderTests.m */,
 			);
 			path = CDVBackgroundGeolocationTests;
 			sourceTree = "<group>";
@@ -373,6 +381,7 @@
 				41CF4FFE1D0CBADE00460361 /* Config.m in Sources */,
 				411675011D2802D6004BC2F4 /* SQLiteLocationDAO.m in Sources */,
 				413B8FA11D0B015600B836F5 /* Location.m in Sources */,
+				41F3D1CC1D2E79FB002448B2 /* LocationUploader.m in Sources */,
 				414D1A941D21B3D800B50F3D /* SQLiteHelper.m in Sources */,
 				411675041D2806A0004BC2F4 /* GeolocationOpenHelper.m in Sources */,
 				414D1A971D21B48600B50F3D /* SQLiteOpenHelper.m in Sources */,
@@ -392,6 +401,7 @@
 				41737FD41D0DAECA0091738A /* BackgroundLocationTests.m in Sources */,
 				413B8FB21D0B3A9600B836F5 /* SQLiteLocationDAOTests.m in Sources */,
 				412686311D271C1700F6D605 /* SQLiteOpenHelperTests.m in Sources */,
+				41F3D1D01D2EAD80002448B2 /* LocationUploaderTests.m in Sources */,
 				41737FD61D0DDD0C0091738A /* SQLiteLocationDAOThreadTests.m in Sources */,
 				414D1A9E1D21B81800B50F3D /* SQLiteHelper.m in Sources */,
 			);

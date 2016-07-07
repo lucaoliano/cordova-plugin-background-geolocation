@@ -19,6 +19,8 @@
 @property NSString* activityType;
 @property BOOL stopOnTerminate;
 @property NSString* url;
+@property NSString* syncUrl;
+@property NSInteger syncThreshold;
 @property NSMutableDictionary* httpHeaders;
 @property BOOL saveBatteryOnBackground;
 @property NSInteger maxLocations;

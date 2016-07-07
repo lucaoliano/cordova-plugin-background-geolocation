@@ -144,6 +144,8 @@ Parameter | Type | Platform     | Description
 `option.locationProvider` | `Number` | Android | Set location provider **@see** [wiki](https://github.com/mauron85/cordova-plugin-background-geolocation/wiki/Android-providers)
 `option.activityType` | `String` | iOS | [AutomotiveNavigation, OtherNavigation, Fitness, Other] Presumably, this affects iOS GPS algorithm. **@see** [Apple docs](https://developer.apple.com/library/ios/documentation/CoreLocation/Reference/CLLocationManager_Class/CLLocationManager/CLLocationManager.html#//apple_ref/occ/instp/CLLocationManager/activityType) for more information
 `option.url` | `String` | iOS, Android | Server url where to send HTTP POST with recorded locations
+`option.syncUrl` | `String` | iOS | Server url where to send fail to post locations (if left blank, same option.url will be used)
+`option.syncThreshold` | `Number` | iOS | Specifies how many previously failed locations will be sent to server at once (default: 100)
 `option.httpHeaders` | `Object` | iOS, Android | Optional HTTP headers sent along in HTTP request
 `option.saveBatteryOnBackground` | `Boolean` | iOS | If enabled it will automatically switch to less accurate significant changes and region monitory when in background (default)
 `options.maxLocations` | `Number` | iOS | Limit maximum number of locations stored into db (default: 10000)
@@ -246,9 +248,7 @@ Note: Locations are not actually deleted from database to avoid gaps in location
 Instead locations are marked as deleted. Locations marked as deleted will not appear in output of `backgroundGeolocation.getLocations`.
 
 ### backgroundGeolocation.deleteAllLocations(success, fail)
-Deprecated warning: This method is **deprecated** and should not be used.
-Plugin manages number of locations automatically and location count never exceeds number
-as defined by `option.maxLocations`.
+Note: You don't need to delete all locations. Plugin manages number of locations automatically and location count never exceeds number as defined by `option.maxLocations`.
 
 Platform: iOS, Android
 
@@ -447,64 +447,43 @@ Following snippet will print colored log of last 100 entries.
 
 ```javascript
 function printLogs(logEntries) {
-  function padLeft(nr, n, str) {
-    return Array(n-String(nr).length+1).join(str||'0')+nr;
-  }  
-  var COLORS = [];
+  var MAX_LINES = 100;
+  var COLORS = Array(5);
   COLORS[1] = 'background:white;color:red';
   COLORS[2] = 'background:black;color:yellow';
   COLORS[4] = 'background:white;color:blue';
   COLORS[8] = 'background:white;color:black';
   COLORS[16] = 'background:white;color:black';
-  var logLines = [], logLinesColor = [];
-  [].forEach.call(logEntries, function(logEntry) {
-      var d = new Date(logEntry.timestamp * 1000);
-      var dateFormatted = [
-        [d.getFullYear(), padLeft(d.getMonth()+1,2), padLeft(d.getDate(),2)].join('/'),
-        [padLeft(d.getHours(),2), padLeft(d.getMinutes(),2), padLeft(d.getSeconds(),2)].join(':')
-      ].join(' ');
-      logLines.push('%c[' + dateFormatted + '] %c' + logEntry.message);
-      logLinesColor.push('background:white;color:black');
-      logLinesColor.push(COLORS[logEntry.level]);
-  });
-  console.log.apply(console, [logLines.join('\n')].concat(logLinesColor));
+  
+  var batch = Math.ceil(logEntries.length / MAX_LINES);
+  var logLines = Array(MAX_LINES); //preallocate memory prevents GC
+  var logLinesColor = Array(MAX_LINES * 2);
+  for (var i = 0; i < batch; i++) {
+    var it = 0;
+    var logEntriesPart = logEntries.slice((i * MAX_LINES), (i + 1) * MAX_LINES);
+    if (logEntriesPart.length < MAX_LINES) {
+      logLines = Array(logEntriesPart.length);
+      logLinesColor = Array(logEntriesPart.length * 2);      
+    }
+    [].forEach.call(logEntriesPart, function(logEntry, i) {
+        var d = new Date(logEntry.timestamp * 1000);
+        var dateFormatted = [
+          [d.getFullYear(), padLeft(d.getMonth()+1,2), padLeft(d.getDate(),2)].join('/'),
+          [padLeft(d.getHours(),2), padLeft(d.getMinutes(),2), padLeft(d.getSeconds(),2)].join(':')
+        ].join(' ');
+        logLines[i] = ('%c[' + dateFormatted + '] %c' + logEntry.message);
+        logLinesColor[it++] = ('background:white;color:black');
+        logLinesColor[it++] = (COLORS[logEntry.level]);
+    });
+    console.log.apply(console, [logLines.join('\n')].concat(logLinesColor));
+  }
+  
+  function padLeft(nr, n, str) {
+    return Array(n - String(nr).length + 1).join(str || '0') + nr;
+  }
 }
 
 backgroundGeolocation.getLogEntries(100, printLogs);
-```
-
-You can also post logs to your server:
-
-``` javascript
-function postLogs(logEntries) {
-  function jQueryPost(logEntries) {
-    logEntries = logEntries || [];
-    console.log('Posting ' + logEntries.length + ' log entries...');
-    jQuery.ajax({
-      type: 'POST',
-      url: 'http://192.168.81.15:3000/debug',
-      data: JSON.stringify(logEntries),
-      timeout: 5000
-    })
-    .done(function () {
-      console.log('Logs has been successfully posted.');
-    })
-    .fail(function(xhr) {
-      console.log('Posting of logs failed with status: ' + xhr.status);
-    });
-  }
-  // will load jQuery if you not using it in your app
-  if (!window.jQuery) {
-    var script = document.createElement('script');    
-    script.src = 'https://ajax.googleapis.com/ajax/libs/jquery/3.0.0/jquery.min.js';
-    script.onload = function () { jQueryPost(logEntries); };
-    document.getElementsByTagName('head')[0].appendChild(script);
-  } else {
-    jQueryPost(logEntries);
-  }
-}
-
-backgroundGeolocation.getLogEntries(100, postLogs);
 ```
 
 ### Debugging sounds

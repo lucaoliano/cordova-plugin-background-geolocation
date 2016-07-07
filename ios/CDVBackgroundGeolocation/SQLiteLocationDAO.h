@@ -18,6 +18,8 @@
 + (instancetype) sharedInstance;
 - (id) init NS_UNAVAILABLE;
 - (NSArray<Location*>*) getAllLocations;
+- (NSArray<Location*>*) getLocationsForSync;
+- (NSNumber*) getLocationsCount;
 - (NSNumber*) persistLocation:(Location*)location;
 - (NSNumber*) persistLocation:(Location*)location limitRows:(NSInteger)maxRows;
 - (BOOL) deleteLocation:(NSNumber*)locationId;

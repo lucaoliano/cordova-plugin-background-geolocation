@@ -12,6 +12,7 @@
 
 #import <UIKit/UIKit.h>
 #import "LocationManager.h"
+#import "LocationUploader.h"
 #import "SQLiteLocationDAO.h"
 #import "BackgroundTaskManager.h"
 #import "Logging.h"
@@ -36,7 +37,7 @@
 #define LOCATION_RESTRICTED     "Application's use of location services is restricted."
 #define LOCATION_NOT_DETERMINED "User undecided on application's use of location services."
 
-NSString * const ErrorDomain = @"com.marianhello";
+static NSString * const Domain = @"com.marianhello";
 
 enum {
     maxLocationWaitTimeInSeconds = 15,
@@ -70,7 +71,9 @@ enum {
     NSDate *lastBgTaskAt;
     
     // configurable options
-    Config* _config;
+    Config *_config;
+    
+    LocationUploader *uploader;
 }
 
 
@@ -105,7 +108,7 @@ enum {
     isAcquiringSpeed = NO;
     //    shouldStart = NO;
     stationaryRegion = nil;
-    
+
     return self;
 }
 
@@ -140,6 +143,10 @@ enum {
         }
     }
     
+    if (_config.syncUrl != nil) {
+        uploader = [[LocationUploader alloc] init];
+    }
+    
     return YES;
 }
 
@@ -160,11 +167,11 @@ enum {
     
     if ([CLLocationManager respondsToSelector:@selector(authorizationStatus)]) { // iOS 4.2+
         authStatus = [CLLocationManager authorizationStatus];
-#ifdef __IPHONE_8_0
+
         if (authStatus == kCLAuthorizationStatusDenied) {
             NSDictionary *errorDictionary = @{ @"code": [NSNumber numberWithInt:DENIED], @"message" : @LOCATION_DENIED };
             if (outError != NULL) {
-                *outError = [NSError errorWithDomain:ErrorDomain code:DENIED userInfo:errorDictionary];
+                *outError = [NSError errorWithDomain:Domain code:DENIED userInfo:errorDictionary];
             }
             
             return NO;
@@ -173,16 +180,17 @@ enum {
         if (authStatus == kCLAuthorizationStatusRestricted) {
             NSDictionary *errorDictionary = @{ @"code": [NSNumber numberWithInt:DENIED], @"message" : @LOCATION_RESTRICTED };
             if (outError != NULL) {
-                *outError = [NSError errorWithDomain:ErrorDomain code:DENIED userInfo:errorDictionary];
+                *outError = [NSError errorWithDomain:Domain code:DENIED userInfo:errorDictionary];
             }
             
             return NO;
         }
         
+#ifdef __IPHONE_8_0
         // we do startUpdatingLocation even though we might not get permissions granted
         // we can stop later on when recieved callback on user denial
         // it's neccessary to start call startUpdatingLocation in iOS < 8.0 to show user prompt!
-        
+
         if (authStatus == kCLAuthorizationStatusNotDetermined) {
             if ([locationManager respondsToSelector:@selector(requestAlwaysAuthorization)]) {  //iOS 8.0+
                 DDLogVerbose(@"LocationManager requestAlwaysAuthorization");
@@ -265,16 +273,11 @@ enum {
 
 - (BOOL) isLocationEnabled
 {
-    BOOL locationServicesEnabledInstancePropertyAvailable = [locationManager respondsToSelector:@selector(locationServicesEnabled)]; // iOS 3.x
-    BOOL locationServicesEnabledClassPropertyAvailable = [CLLocationManager respondsToSelector:@selector(locationServicesEnabled)]; // iOS 4.x
-    
-    if (locationServicesEnabledClassPropertyAvailable) { // iOS 4.x
+    if ([CLLocationManager respondsToSelector:@selector(locationServicesEnabled)]) { // iOS 4.x
         return [CLLocationManager locationServicesEnabled];
-    } else if (locationServicesEnabledInstancePropertyAvailable) { // iOS 2.x, iOS 3.x
-        return [(id)locationManager locationServicesEnabled];
-    } else {
-        return NO;
     }
+
+    return NO;
 }
 
 - (void) showAppSettings
@@ -288,16 +291,6 @@ enum {
 - (void) showLocationSettings
 {
     [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"prefs:root=LOCATION_SERVICES"]];
-}
-
-//- (void) watchLocationMode
-//{
-//    // TODO: yet to be implemented
-//}
-
-- (void) stopWatchingLocationMode
-{
-    // TODO: yet to be implemented
 }
 
 - (NSMutableDictionary*) getStationaryLocation
@@ -371,12 +364,17 @@ enum {
             [self sync:location];
             [locationQueue removeObject:location];
         });
+        
+        if (uploader != nil && _config.syncUrl != nil) {
+            [uploader sync:_config.syncUrl onLocationThreshold:_config.syncThreshold];
+        }
 
         if ([location.type isEqual: @"current"]) {
             if (_config.url != nil) {
                 dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-                    NSArray *locations = [[NSArray alloc] initWithObjects:[location toDictionary], nil];
-                    if (![self postJSON:locations]) {
+                    NSError *error = nil;
+                    if (![location postAsJSON:_config.url withHttpHeaders:_config.httpHeaders error:&error]) {
+                        DDLogWarn(@"LocationManager postJSON failed: error: %@", error.userInfo[@"NSLocalizedDescription"]);
                         SQLiteLocationDAO* locationDAO = [SQLiteLocationDAO sharedInstance];
                         location.id = [locationDAO persistLocation:location limitRows:_config.maxLocations];
                     }
@@ -736,41 +734,6 @@ enum {
     localNotification.fireDate = [NSDate date];
     localNotification.alertBody = message;
     [[UIApplication sharedApplication] scheduleLocalNotification:localNotification];
-}
-
-- (BOOL) postJSON:(NSArray*)array
-{
-    NSError *e = nil;
-    //    NSArray *jsonArray = [NSJSONSerialization JSONObjectWithData: data options: NSJSONReadingMutableContainers error: &e];
-    NSData *data = [NSJSONSerialization dataWithJSONObject:array options:0 error:&e];
-    if (!data) {
-        return false;
-    }
-    
-    NSString *jsonStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:_config.url]];
-    [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-    [request setHTTPMethod:@"POST"];
-    if (_config.httpHeaders) {
-        for(id key in _config.httpHeaders) {
-            id value = [_config.httpHeaders objectForKey:key];
-            [request addValue:value forHTTPHeaderField:key];
-        }
-    }
-    [request setHTTPBody:[jsonStr dataUsingEncoding:NSUTF8StringEncoding]];
-    
-    // Create url connection and fire request
-    NSHTTPURLResponse* urlResponse = nil;
-    NSError *error = nil;
-    [NSURLConnection sendSynchronousRequest:request returningResponse:&urlResponse error:&error];
-    
-    if (error == nil && [urlResponse statusCode] == 200) {
-        return YES;
-    }
-    
-    DDLogWarn(@"LocationManager postJSON failed: code %ld error: %@", (long)urlResponse.statusCode, error.userInfo[@"NSLocalizedDescription"]);
-    
-    return NO;
 }
 
 /**@

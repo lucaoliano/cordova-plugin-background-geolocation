@@ -35,7 +35,10 @@ static NSInteger const kDatabaseVersion = 1;
         // because of some legacy code we have to drop table
         [self drop:@LC_TABLE_NAME inDatabase:database];
 
-        NSString *sql = [LocationContract createTableSQL];
+        NSString *sql = [@[
+            [LocationContract createTableSQL],
+            @"CREATE INDEX time_idx ON " @LC_TABLE_NAME @" (" @LC_COLUMN_NAME_TIME @");"
+        ]  componentsJoinedByString:@""];
         if (![database executeStatements:sql]) {
             NSLog(@"%@ failed code: %d: message: %@", sql, [database lastErrorCode], [database lastErrorMessage]);
         }

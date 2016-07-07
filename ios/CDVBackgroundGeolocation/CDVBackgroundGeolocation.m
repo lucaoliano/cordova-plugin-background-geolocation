@@ -35,7 +35,7 @@
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onFinishLaunching:) name:UIApplicationDidFinishLaunchingNotification object:nil];
 }
 
-- (NSString *)applicationFilesDirectory
+- (NSString *)loggerDirectory
 {
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
     NSString *basePath = ([paths count] > 0) ? [paths objectAtIndex:0] : NSTemporaryDirectory();
@@ -57,10 +57,10 @@
         
         if (config.isDebugging) {
             if (sqliteLogger == nil) {
-                sqliteLogger = [[FMDBLogger alloc] initWithLogDirectory:[self applicationFilesDirectory]];
+                sqliteLogger = [[FMDBLogger alloc] initWithLogDirectory:[self loggerDirectory]];
                 sqliteLogger.saveThreshold     = 1;
                 sqliteLogger.saveInterval      = 0;
-                sqliteLogger.maxAge            = 60 * 60 * 24;     //  1 day
+                sqliteLogger.maxAge            = 60 * 60 * 24 * 7; //  7 days
                 sqliteLogger.deleteInterval    = 60 * 60 * 24;     //  1 day
                 sqliteLogger.deleteOnEverySave = NO;
                 
@@ -193,21 +193,12 @@
 
 - (void) watchLocationMode:(CDVInvokedUrlCommand*)command
 {
-    [self.commandDelegate runInBackground:^{
-        locationModeCallbackId = command.callbackId;
-        [self addObserver:self forKeyPath:@"manager.authStatus" options:NSKeyValueObservingOptionNew context:nil];
-    }];
+    locationModeCallbackId = command.callbackId;
 }
 
 - (void) stopWatchingLocationMode:(CDVInvokedUrlCommand*)command
 {
-    [self.commandDelegate runInBackground:^{
-        @try {
-            [self removeObserver:self forKeyPath:@"manager.authStatus"];
-        }
-        @catch (NSException * __unused exception) {}
-        locationModeCallbackId = nil;
-    }];
+    locationModeCallbackId = nil;
 }
 
 - (void) getLocations:(CDVInvokedUrlCommand*)command
@@ -249,7 +240,7 @@
     [self.commandDelegate runInBackground:^{
         NSInteger limit = [command.arguments objectAtIndex: 0] == [NSNull null]
             ? 0 : [[command.arguments objectAtIndex: 0] integerValue];
-        NSString *path = [[self applicationFilesDirectory] stringByAppendingPathComponent:@"log.sqlite"];
+        NSString *path = [[self loggerDirectory] stringByAppendingPathComponent:@"log.sqlite"];
         NSArray *logs = [LogReader getEntries:path limit:limit];
         CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:logs];
         [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
@@ -294,9 +285,11 @@
 - (void) onAuthorizationChanged:(NSInteger)authStatus
 {
     [self.commandDelegate runInBackground:^{
-        CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:(authStatus == ALLOWED) ? YES : NO];
-        [result setKeepCallbackAsBool:YES];
-        [self.commandDelegate sendPluginResult:result callbackId:locationModeCallbackId];
+        if (locationModeCallbackId != nil) {
+            CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:(authStatus == ALLOWED) ? YES : NO];
+            [result setKeepCallbackAsBool:YES];
+            [self.commandDelegate sendPluginResult:result callbackId:locationModeCallbackId];
+        }
     }];
 }
 
