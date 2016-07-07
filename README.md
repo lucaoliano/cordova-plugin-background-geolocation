@@ -344,7 +344,7 @@ backgroundGeolocation.isLocationEnabled(function (enabled) {
 
 ## HTTP locations posting
 
- All locations updates are recorded in local db. Number of location stored in db is limited by `option.maxLocations` a never exceeds this number. Instead old locations are replaced by newer ones.
+ All locations updates are recorded in local db. Number of location stored in db is limited by `option.maxLocations` and never exceeds this number. Instead old locations are replaced by newer ones.
 
 When App is in foreground or background in addition to storing location in local db, location callback function is triggered. 
 
