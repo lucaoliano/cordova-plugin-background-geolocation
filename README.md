@@ -344,9 +344,11 @@ backgroundGeolocation.isLocationEnabled(function (enabled) {
 
 ## HTTP locations posting
 
-If `option.url` is not defined, all locations updates are recorded in local db. When App is in foreground or background in addition to storing location in local db, location callback function is triggered. Number of location stored in db is limited by `option.maxLocations` a never exceeds this number. Instead old locations are replaced by new ones.
+ All locations updates are recorded in local db. Number of location stored in db is limited by `option.maxLocations` a never exceeds this number. Instead old locations are replaced by newer ones.
 
-When `option.url` is defined. Location updates are also stored in local db. In addition, each location is also immediately posted to url defined by `option.url`. If post is successful, the location is marked as deleted in local db. All failed to post locations will be coalesced and send in some time later in one single batch. [TO_BE_DEFINED]~~Batch sync takes place only as per interval defined in IntervalForPost config option.~~[/TO_BE_DEFINED].
+When App is in foreground or background in addition to storing location in local db, location callback function is triggered. 
+
+When `option.url` is defined. Location updates are also stored in local db. Each location is also immediately posted to server url defined by `option.url`. If post is successful, the location is marked as deleted in local db. All failed to post locations will be coalesced and send in some time later in one single batch. Batch sync takes place only when number of fail to post location exceeds number defined by `option.syncThreshold`.
 
 Request body of posted locations is always array, even when only one location is sent.
 
