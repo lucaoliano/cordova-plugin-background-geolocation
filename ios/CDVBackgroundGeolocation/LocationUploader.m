@@ -11,8 +11,6 @@
 #import "LocationUploader.h"
 #import "SQLiteLocationDAO.h"
 
-#define HOST @"http://192.168.81.15/notify"
-
 @interface LocationUploader ()  <NSURLSessionDelegate, NSURLSessionTaskDelegate>
 {
     NSURLSession *urlSession;
@@ -37,9 +35,7 @@
 {
     __block UIBackgroundTaskIdentifier bgTask = [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^{
         [[UIApplication sharedApplication] endBackgroundTask:bgTask];
-    }];
-    
-    [self notify:@"start"];
+    }];    
     
     [urlSession getTasksWithCompletionHandler:^(NSArray *dataTasks, NSArray *uploadTasks, NSArray *downloadTasks) {
         for(NSURLSessionUploadTask *task in uploadTasks) {
@@ -57,23 +53,6 @@
     for(NSURLSessionTask *task in tasks) {
         [task cancel];
     }
-}
-
-- (void)notify:(NSString*)what
-{
-    __block UIBackgroundTaskIdentifier task = [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^{
-        DDLogInfo(@"Oops, notify expired");
-        [[UIApplication sharedApplication] endBackgroundTask:task];
-    }];
-    
-    DDLogDebug(@"Notifying %@", what);
-    [NSURLConnection sendAsynchronousRequest:[NSURLRequest
-        requestWithURL:[NSURL URLWithString:[NSString stringWithFormat: HOST @"?name=%@", what]]]
-        queue:[NSOperationQueue mainQueue]
-        completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
-            DDLogDebug(@"Finished notifying %@", what);
-            [[UIApplication sharedApplication] endBackgroundTask:task];
-    }];
 }
 
 - (void) sync:(NSString*)url onLocationThreshold:(NSInteger)threshold;
@@ -140,42 +119,39 @@ NSString *stringFromFileSize(unsigned long long theSize)
         toSend += task.countOfBytesExpectedToSend;
     }
     return [NSString stringWithFormat:@"%@ being uploaded (%@ of %@)\nFiles on disk: %@",
-            [tasks valueForKeyPath:@"taskDescription"],
-            stringFromFileSize(sent),
-            stringFromFileSize(toSend),
-            
-            [[NSFileManager defaultManager]
-             contentsOfDirectoryAtPath:NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0]
-             error:NULL]
-            ];
+        [tasks valueForKeyPath:@"taskDescription"],
+        stringFromFileSize(sent),
+        stringFromFileSize(toSend),
+
+        [[NSFileManager defaultManager]
+         contentsOfDirectoryAtPath:NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0]
+         error:NULL]
+    ];
 }
 
 
 #pragma mark -
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error
 {
-    NSLog(@"Finished uploading task %zu %@: %@ %@, HTTP %ld", (unsigned long)[task taskIdentifier], task.originalRequest.URL, error ?: @"Success", task.response, (long)[(id)task.response statusCode]);
+    DDLogInfo(@"Finished uploading task %zu %@: %@ %@, HTTP %ld", (unsigned long)[task taskIdentifier], task.originalRequest.URL, error ?: @"Success", task.response, (long)[(id)task.response statusCode]);
     [tasks removeObject:task];
     NSURL *fullPath = [NSURL fileURLWithPath:[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0] stringByAppendingPathComponent:task.taskDescription]];
     [[NSFileManager defaultManager] removeItemAtURL:fullPath error:NULL];
-    
-    [self notify:[NSString stringWithFormat:@"taskfinish-%ld", (unsigned long)[task taskIdentifier]]];
 }
 
 - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveData:(NSData *)data
 {
-    NSLog(@"Response:: %@", [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]);
+    DDLogInfo(@"Response:: %@", [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]);
 }
 
 - (void)URLSession:(NSURLSession *)session didBecomeInvalidWithError:(NSError *)error
 {
-    NSLog(@"sadface :( %@", error);
+    DDLogError(@"Autosync failed :( %@", error);
 }
 
 - (void)URLSessionDidFinishEventsForBackgroundURLSession:(NSURLSession *)session
 {
-    NSLog(@"finihed events for bg session");
-    [self notify:@"sessionfinish"];
+    DDLogInfo(@"finished events for bg session");
 }
 
 @end

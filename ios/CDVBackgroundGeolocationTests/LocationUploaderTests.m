@@ -48,8 +48,8 @@
     }
     
     LocationUploader *uploader = [[LocationUploader alloc] init];
-    [uploader sync];
-    
+    [uploader sync:@"http://192.168.81.15:3000/testSync" onLocationThreshold:10];
+    sleep(5);
     
 }
 
