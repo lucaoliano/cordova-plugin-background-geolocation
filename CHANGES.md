@@ -1,5 +1,9 @@
 ## Changelog
 
+### [2.1.3] - 2016-07-08
+### Fixed
+- android issue #106
+
 ### [2.1.2] - 2016-06-23
 ### Fixed
 - iOS database not created

@@ -66,6 +66,13 @@ public class ActivityRecognitionLocationProvider extends AbstractLocationProvide
             stopTracking();
         }
 
+        // wifi and cell provider (and also buggy devices) don't report speed so we calulate speed from movement
+        if (!location.hasSpeed() && lastLocation != null) {
+            double speed = Math.sqrt(Math.pow(location.getLongitude() - lastLocation.getLongitude(), 2) +
+                    Math.pow(location.getLatitude() - lastLocation.getLatitude(), 2)) / (location.getTime() - lastLocation.getTime());
+            location.setSpeed((float) speed);
+        }
+
         if (config.isDebugging()) {
             Toast.makeText(context, "acy:" + location.getAccuracy() + ",v:" + location.getSpeed() + ",df:" + config.getDistanceFilter(), Toast.LENGTH_LONG).show();
         }
