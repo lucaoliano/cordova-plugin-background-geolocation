@@ -1,4 +1,4 @@
-package com.marianhello.bgloc.logging;
+package com.marianhello.logging;
 
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -6,13 +6,12 @@ import android.database.sqlite.SQLiteException;
 
 import java.io.File;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.db.SQLBuilder;
 import ch.qos.logback.classic.db.names.ColumnName;
 import ch.qos.logback.classic.db.names.DefaultDBNameResolver;
-import ch.qos.logback.core.Context;
 import ch.qos.logback.core.CoreConstants;
 import ch.qos.logback.core.android.CommonPathUtil;
 
@@ -24,13 +23,8 @@ public class LogReader {
     private DefaultDBNameResolver dbNameResolver;
     private SQLiteDatabase db;
 
-    public static Collection<LogEntry> getEntries(Integer limit) throws SQLException {
-        LogReader reader = new LogReader();
-        return reader._getEntries(limit);
-    }
-
-    private Collection<LogEntry> _getEntries(Integer limit) throws SQLException {
-        Collection<LogEntry> entries = null;
+    public Collection<LogEntry> getEntries(Integer limit) throws SQLException {
+        Collection<LogEntry> entries = new ArrayList<LogEntry>();
 
         String packageName = null;
         LoggerContext context = (LoggerContext) org.slf4j.LoggerFactory.getILoggerFactory();
@@ -58,7 +52,7 @@ public class LogReader {
                 if (dbNameResolver == null) {
                     dbNameResolver = new DefaultDBNameResolver();
                 }
-                String sql = com.marianhello.bgloc.logging.SQLBuilder.buildSelectSQL(dbNameResolver);
+                String sql = com.marianhello.logging.SQLBuilder.buildSelectSQL(dbNameResolver);
                 cursor = db.rawQuery(sql, new String[] { String.valueOf(limit) });
                 while (cursor.moveToNext()) {
                     entries.add(hydrate(cursor));
@@ -79,7 +73,7 @@ public class LogReader {
     }
 
     private LogEntry hydrate(Cursor c) {
-        LogEntry entry = null;
+        LogEntry entry = new LogEntry();
         entry.setContext(0);
         entry.setLevel(c.getString(c.getColumnIndex(dbNameResolver.getColumnName(ColumnName.LEVEL_STRING))));
         entry.setMessage(c.getString(c.getColumnIndex(dbNameResolver.getColumnName(ColumnName.FORMATTED_MESSAGE))));

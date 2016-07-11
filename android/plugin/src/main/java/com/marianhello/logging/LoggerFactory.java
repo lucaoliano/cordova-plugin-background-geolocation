@@ -1,14 +1,11 @@
-package com.marianhello.bgloc.logging;
+package com.marianhello.logging;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.android.BasicLogcatConfigurator;
 import ch.qos.logback.classic.android.LogcatAppender;
 import ch.qos.logback.classic.android.SQLiteAppender;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.ConsoleAppender;
 
 /**
  * Created by finch on 08/07/16.
@@ -34,6 +31,7 @@ public class LoggerFactory {
 
         SQLiteAppender sqliteAppender = new SQLiteAppender();
         sqliteAppender.setContext(context);
+        sqliteAppender.start();
 
         ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.TRACE);

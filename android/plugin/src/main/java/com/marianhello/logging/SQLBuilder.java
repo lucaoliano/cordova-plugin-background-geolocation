@@ -1,4 +1,4 @@
-package com.marianhello.bgloc.logging;
+package com.marianhello.logging;
 
 import ch.qos.logback.classic.db.names.ColumnName;
 import ch.qos.logback.classic.db.names.DBNameResolver;

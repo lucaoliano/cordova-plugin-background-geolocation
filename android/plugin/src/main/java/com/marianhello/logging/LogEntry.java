@@ -1,4 +1,4 @@
-package com.marianhello.bgloc.logging;
+package com.marianhello.logging;
 
 import org.json.JSONException;
 import org.json.JSONObject;

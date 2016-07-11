@@ -32,7 +32,7 @@ import static java.lang.Math.abs;
 
 import com.marianhello.bgloc.AbstractLocationProvider;
 import com.marianhello.bgloc.LocationService;
-import com.marianhello.bgloc.logging.LoggerFactory;
+import com.marianhello.logging.LoggerFactory;
 
 
 public class DistanceFilterLocationProvider extends AbstractLocationProvider implements LocationListener {

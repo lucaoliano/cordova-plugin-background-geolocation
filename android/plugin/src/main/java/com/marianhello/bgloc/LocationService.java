@@ -30,7 +30,7 @@ import android.support.v4.app.NotificationCompat;
 import com.marianhello.bgloc.data.BackgroundLocation;
 import com.marianhello.bgloc.data.DAOFactory;
 import com.marianhello.bgloc.data.LocationDAO;
-import com.marianhello.bgloc.logging.LoggerFactory;
+import com.marianhello.logging.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Random;

@@ -35,9 +35,9 @@ import android.text.TextUtils;
 
 import com.marianhello.bgloc.Config;
 import com.marianhello.bgloc.LocationService;
-import com.marianhello.bgloc.logging.LogEntry;
-import com.marianhello.bgloc.logging.LogReader;
-import com.marianhello.bgloc.logging.LoggerFactory;
+import com.marianhello.logging.LogEntry;
+import com.marianhello.logging.LogReader;
+import com.marianhello.logging.LoggerFactory;
 import com.marianhello.bgloc.data.BackgroundLocation;
 import com.marianhello.bgloc.data.ConfigurationDAO;
 import com.marianhello.bgloc.data.DAOFactory;
@@ -79,9 +79,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
     private Messenger mService = null;
     /** Flag indicating whether we have called bind on the service. */
     private Boolean mIsBound = false;
-
     private Boolean isServiceRunning = false;
-    private Boolean isLocationModeChangeReceiverRegistered = false;
 
     private LocationDAO dao;
     private Config config;
@@ -255,52 +253,71 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
 
             return true;
         } else if (REGISTER_MODE_CHANGED_RECEIVER.equals(action)) {
-            this.locationModeChangeCallbackContext = callbackContext;
-            registerLocationModeChangeReceiver();
+            registerLocationModeChangeReceiver(callbackContext);
             // TODO: call success/fail callback
 
             return true;
         } else if (UNREGISTER_MODE_CHANGED_RECEIVER.equals(action)) {
             unregisterLocationModeChangeReceiver();
-            this.locationModeChangeCallbackContext = null;
             // TODO: call success/fail callback
 
             return true;
         } else if (ACTION_GET_ALL_LOCATIONS.equals(action)) {
-            try {
-                callbackContext.success(getAllLocations());
-            } catch (JSONException e) {
-                callbackContext.error("Converting locations to JSON failed.");
-            }
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                    try {
+                        callbackContext.success(getAllLocations());
+                    } catch (JSONException e) {
+                        callbackContext.error("Converting locations to JSON failed.");
+                    }
+                }
+            });
 
             return true;
         } else if (ACTION_DELETE_LOCATION.equals(action)) {
-            try {
-                deleteLocation(data.getLong(0));
-                callbackContext.success();
-            } catch (JSONException e) {
-                callbackContext.error("Configuration error: " + e.getMessage());
-            }
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                    try {
+                        deleteLocation(data.getLong(0));
+                        callbackContext.success();
+                    } catch (JSONException e) {
+                        callbackContext.error("Configuration error: " + e.getMessage());
+                    }
+                }
+            });
 
             return true;
         } else if (ACTION_DELETE_ALL_LOCATIONS.equals(action)) {
-            deleteAllLocations();
-            callbackContext.success();
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                    deleteAllLocations();
+                    callbackContext.success();
+                }
+            });
 
             return true;
         } else if (ACTION_GET_CONFIG.equals(action)) {
-            try {
-                callbackContext.success(retrieveConfiguration());
-            } catch (JSONException e) {
-                callbackContext.error("Configuration error: " + e.getMessage());
-            }
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                    try {
+                        callbackContext.success(retrieveConfiguration());
+                    } catch (JSONException e) {
+                        callbackContext.error("Configuration error: " + e.getMessage());
+                    }
+                }
+            });
+
             return true;
         } else if (ACTION_GET_LOG_ENTRIES.equals(action)) {
-            try {
-                callbackContext.success(getLogs(data.getInt(0)));
-            } catch (Exception e) {
-                callbackContext.error("Getting logs failed: " + e.getMessage());
-            }
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                    try {
+                        callbackContext.success(getLogs(data.getInt(0)));
+                    } catch (Exception e) {
+                        callbackContext.error("Getting logs failed: " + e.getMessage());
+                    }
+                }
+            });
 
             return true;
         }
@@ -390,18 +407,19 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
     }
 
     @TargetApi(Build.VERSION_CODES.KITKAT)
-    public Intent registerLocationModeChangeReceiver () {
-        if (isLocationModeChangeReceiverRegistered) { return null; }
-
-        isLocationModeChangeReceiverRegistered = true;
+    public Intent registerLocationModeChangeReceiver (CallbackContext callbackContext) {
+        if (locationModeChangeCallbackContext != null) {
+            unregisterLocationModeChangeReceiver();
+        }
+        locationModeChangeCallbackContext = callbackContext;
         return getContext().registerReceiver(locationModeChangeReceiver, new IntentFilter(LocationManager.MODE_CHANGED_ACTION));
     }
 
     public void unregisterLocationModeChangeReceiver () {
-        if (!isLocationModeChangeReceiverRegistered) { return; }
+        if (locationModeChangeCallbackContext == null) { return; }
 
         getContext().unregisterReceiver(locationModeChangeReceiver);
-        isLocationModeChangeReceiverRegistered = false;
+        locationModeChangeCallbackContext = null;
     }
 
     public void showLocationSettings() {
@@ -459,7 +477,8 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
 
     public JSONArray getLogs(Integer limit) throws Exception {
         JSONArray jsonLogsArray = new JSONArray();
-        Collection<LogEntry> logEntries = LogReader.getEntries(limit);
+        LogReader logReader = new LogReader();
+        Collection<LogEntry> logEntries = logReader.getEntries(limit);
         for (LogEntry logEntry : logEntries) {
             jsonLogsArray.put(logEntry.toJSONObject());
         }

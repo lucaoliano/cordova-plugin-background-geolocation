@@ -20,7 +20,7 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.ActivityRecognition;
 import com.google.android.gms.location.DetectedActivity;
 import com.google.android.gms.location.ActivityRecognitionResult;
-import com.marianhello.bgloc.logging.LoggerFactory;
+import com.marianhello.logging.LoggerFactory;
 
 public class ActivityRecognitionLocationProvider extends AbstractLocationProvider implements GoogleApiClient.ConnectionCallbacks,
     GoogleApiClient.OnConnectionFailedListener, LocationListener {
