@@ -120,13 +120,13 @@ public class DistanceFilterLocationProvider extends AbstractLocationProvider imp
     }
 
     public void startRecording() {
-        log.debug("startRecording");
+        log.info("Start recording");
         scaledDistanceFilter = config.getDistanceFilter();
         setPace(false);
     }
 
     public void stopRecording() {
-        log.debug("stopRecording not implemented yet");
+        log.info("stopRecording not implemented yet");
     }
 
     /**
@@ -134,7 +134,7 @@ public class DistanceFilterLocationProvider extends AbstractLocationProvider imp
      * @param value set true to engage "aggressive", battery-consuming tracking, false for stationary-region tracking
      */
     private void setPace(Boolean value) {
-        log.info("setPace: {}", value);
+        log.info("Setting pace: {}", value);
 
         Boolean wasMoving   = isMoving;
         isMoving            = value;
@@ -212,7 +212,7 @@ public class DistanceFilterLocationProvider extends AbstractLocationProvider imp
         long bestTime = Long.MIN_VALUE;
         long minTime = System.currentTimeMillis() - config.getInterval();
 
-        log.info("fetching last best location: radius={} minTime={}", config.getStationaryRadius(), minTime);
+        log.info("Fetching last best location: radius={} minTime={}", config.getStationaryRadius(), minTime);
 
         // Iterate through all the providers on the system, keeping
         // note of the most accurate result within the acceptable time limit.
@@ -221,7 +221,7 @@ public class DistanceFilterLocationProvider extends AbstractLocationProvider imp
         for (String provider: matchingProviders) {
             Location location = locationManager.getLastKnownLocation(provider);
             if (location != null) {
-                log.debug("test provider={} lat={} lon={} acy={} v={}m/s time={}", provider, location.getLatitude(), location.getLongitude(), location.getAccuracy(), location.getSpeed(), location.getTime());
+                log.debug("Test provider={} lat={} lon={} acy={} v={}m/s time={}", provider, location.getLatitude(), location.getLongitude(), location.getAccuracy(), location.getSpeed(), location.getTime());
                 float accuracy = location.getAccuracy();
                 long time = location.getTime();
                 if ((time > minTime && accuracy < bestAccuracy)) {
@@ -234,14 +234,14 @@ public class DistanceFilterLocationProvider extends AbstractLocationProvider imp
         }
 
         if (bestResult != null) {
-            log.debug("best result found provider={} lat={} lon={} acy={} v={}m/s time={}", bestProvider, bestResult.getLatitude(), bestResult.getLongitude(), bestResult.getAccuracy(), bestResult.getSpeed(), bestResult.getTime());
+            log.debug("Best result found provider={} lat={} lon={} acy={} v={}m/s time={}", bestProvider, bestResult.getLatitude(), bestResult.getLongitude(), bestResult.getAccuracy(), bestResult.getSpeed(), bestResult.getTime());
         }
 
         return bestResult;
     }
 
     public void onLocationChanged(Location location) {
-        log.debug("onLocationChanged: lat={} lon={} acy={} v={} isMoving={}", location.getLatitude(), location.getLongitude(), location.getAccuracy(), location.getSpeed(), isMoving);
+        log.debug("Location change: lat={} lon={} acy={} v={} isMoving={}", location.getLatitude(), location.getLongitude(), location.getAccuracy(), location.getSpeed(), isMoving);
 
         if (!isMoving && !isAcquiringStationaryLocation && stationaryLocation==null) {
             // Perhaps our GPS signal was interupted, re-acquire a stationaryLocation now.
@@ -294,7 +294,7 @@ public class DistanceFilterLocationProvider extends AbstractLocationProvider imp
             // Calculate latest distanceFilter, if it changed by 5 m/s, we'll reconfigure our pace.
             Integer newDistanceFilter = calculateDistanceFilter(location.getSpeed());
             if (newDistanceFilter != scaledDistanceFilter.intValue()) {
-                log.info("updated distanceFilter: new={} old={}", newDistanceFilter, scaledDistanceFilter);
+                log.info("Updating distanceFilter: new={} old={}", newDistanceFilter, scaledDistanceFilter);
                 scaledDistanceFilter = newDistanceFilter;
                 setPace(true);
             }
@@ -390,7 +390,7 @@ public class DistanceFilterLocationProvider extends AbstractLocationProvider imp
 
         // TODO http://www.cse.buffalo.edu/~demirbas/publications/proximity.pdf
         // determine if we're almost out of stationary-distance and increase monitoring-rate.
-        log.info("distance from stationary location: {}", distance);
+        log.info("Distance from stationary location: {}", distance);
         if (distance > stationaryRadius) {
             onExitStationaryRegion(location);
         } else if (distance > 0) {

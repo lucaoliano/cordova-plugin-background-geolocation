@@ -87,13 +87,13 @@ public class ActivityRecognitionLocationProvider extends AbstractLocationProvide
     }
 
     public void startRecording() {
-        log.info("startRecording");
+        log.info("Start recording");
         this.startRecordingOnConnect = true;
         attachRecorder();
     }
 
     public void stopRecording() {
-        log.info("stopRecording");
+        log.info("Stop recording");
         this.startRecordingOnConnect = false;
         detachRecorder();
         stopTracking();
@@ -110,7 +110,7 @@ public class ActivityRecognitionLocationProvider extends AbstractLocationProvide
                 // .setSmallestDisplacement(config.getStationaryRadius());
         LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, this);
         isTracking = true;
-        log.debug("startTracking with priority={} fastestInterval={} interval={} radius={}", priority, config.getFastestInterval(), config.getInterval(), config.getStationaryRadius());
+        log.debug("Start tracking with priority={} fastestInterval={} interval={} activitiesInterval={} stopOnStillActivity={}", priority, config.getFastestInterval(), config.getInterval(), config.getActivitiesInterval(), config.getStopOnStillActivity());
     }
 
     public void stopTracking() {
@@ -121,7 +121,7 @@ public class ActivityRecognitionLocationProvider extends AbstractLocationProvide
     }
 
     private void connectToPlayAPI() {
-        log.debug("connecting to Google Play Services");
+        log.debug("Connecting to Google Play Services");
         googleApiClient =  new GoogleApiClient.Builder(context)
                 .addApi(LocationServices.API)
                 .addApi(ActivityRecognition.API)
@@ -158,7 +158,7 @@ public class ActivityRecognitionLocationProvider extends AbstractLocationProvide
 
     private void detachRecorder() {
         if (isWatchingActivity) {
-            log.debug("detachRecorder");
+            log.debug("Detaching recorder");
             ActivityRecognition.ActivityRecognitionApi.removeActivityUpdates(googleApiClient, detectedActivitiesPI);
             isWatchingActivity = false;
         }
@@ -166,7 +166,7 @@ public class ActivityRecognitionLocationProvider extends AbstractLocationProvide
 
     @Override
     public void onConnected(Bundle connectionHint) {
-        log.debug("connected to Google Play Services");
+        log.debug("Connected to Google Play Services");
         if (this.startRecordingOnConnect) {
             attachRecorder();
         }
@@ -175,12 +175,12 @@ public class ActivityRecognitionLocationProvider extends AbstractLocationProvide
     @Override
     public void onConnectionSuspended(int cause) {
         // googleApiClient.connect();
-        log.info("connection to Google Play Services suspended");
+        log.info("Connection to Google Play Services suspended");
     }
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
-        log.error("connection to Google Play Services failed");
+        log.error("Connection to Google Play Services failed");
     }
 
     /**
@@ -257,7 +257,7 @@ public class ActivityRecognitionLocationProvider extends AbstractLocationProvide
             //Find the activity with the highest percentage
             lastActivity = getProbableActivity(detectedActivities);
 
-            log.debug("detected activity={} confidence={}", getActivityString(lastActivity.getType()), lastActivity.getConfidence());
+            log.debug("Detected activity={} confidence={}", getActivityString(lastActivity.getType()), lastActivity.getConfidence());
 
             if (lastActivity.getType() == DetectedActivity.STILL) {
                 if (config.isDebugging()) {
