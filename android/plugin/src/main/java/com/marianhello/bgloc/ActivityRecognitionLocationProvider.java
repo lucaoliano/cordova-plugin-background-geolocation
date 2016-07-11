@@ -110,8 +110,7 @@ public class ActivityRecognitionLocationProvider extends AbstractLocationProvide
                 // .setSmallestDisplacement(config.getStationaryRadius());
         LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, this);
         isTracking = true;
-        log.debug("startTracking with priority: "
-            + priority + ", fastestInterval: " + config.getFastestInterval() + ", interval: " + config.getInterval() + ", smallestDisplacement: " + config.getStationaryRadius());
+        log.debug("startTracking with priority={} fastestInterval={} interval={} radius={}", priority, config.getFastestInterval(), config.getInterval(), config.getStationaryRadius());
     }
 
     public void stopTracking() {
@@ -258,7 +257,7 @@ public class ActivityRecognitionLocationProvider extends AbstractLocationProvide
             //Find the activity with the highest percentage
             lastActivity = getProbableActivity(detectedActivities);
 
-            log.debug("MOST LIKELY ACTIVITY: " + getActivityString(lastActivity.getType()) + " " + lastActivity.getConfidence());
+            log.debug("detected activity={} confidence={}", getActivityString(lastActivity.getType()), lastActivity.getConfidence());
 
             if (lastActivity.getType() == DetectedActivity.STILL) {
                 if (config.isDebugging()) {

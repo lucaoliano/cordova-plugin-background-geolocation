@@ -26,6 +26,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 
 import com.marianhello.bgloc.data.BackgroundLocation;
 import com.marianhello.bgloc.data.DAOFactory;
@@ -307,7 +308,14 @@ public class LocationService extends Service {
             }
 
             log.debug("Posting json to url: " + config.getUrl() + " headers: " + config.getHttpHeaders());
-            int response = HttpPostService.postJSON(config.getUrl(), jsonLocations, config.getHttpHeaders());
+            int response;
+
+            try {
+                response = HttpPostService.postJSON(config.getUrl(), jsonLocations, config.getHttpHeaders());
+            } catch (Throwable e) {
+                log.warn("Exception posting json", e);
+                response = 0;
+            }
 
             if (response == 200) {
                 for (BackgroundLocation location : locations) {
