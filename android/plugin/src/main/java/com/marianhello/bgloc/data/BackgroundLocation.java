@@ -170,7 +170,8 @@ public class BackgroundLocation implements Parcelable {
             .append(" bear=").append(getBearing())
             .append(" prov=").append(getProvider())
             .append(" locprov=").append(getLocationProvider())
-            .append(" debug=").append(getDebug()).append("]")
+            .append(" debug=").append(getDebug())
+            .append("]")
             .toString();
     }
 

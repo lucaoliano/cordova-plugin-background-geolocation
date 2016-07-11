@@ -139,7 +139,7 @@ public class LocationService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        log.info("Received start id " + startId + ": " + intent);
+        log.info("Received start startId:{} intent:{}", startId, intent);
 
         if (intent.hasExtra("config")) {
             config = (Config) intent.getParcelableExtra("config");
@@ -150,6 +150,8 @@ public class LocationService extends Service {
         if (provider != null) {
             provider.onDestroy();
         }
+
+        log.debug("Will start service with: {}", config.toString());
 
         LocationProviderFactory spf = new LocationProviderFactory(this);
         provider = spf.getInstance(config.getLocationProvider());
@@ -208,7 +210,7 @@ public class LocationService extends Service {
             try {
                 iconColor = Color.parseColor(color);
             } catch (IllegalArgumentException e) {
-                log.error("couldn't parse color from android options");
+                log.error("Couldn't parse color from android options");
             }
         }
         return iconColor;
@@ -259,9 +261,9 @@ public class LocationService extends Service {
 
     public void persistLocation (BackgroundLocation location) {
         if (dao.persistLocation(location) > -1) {
-            log.debug("Persisted Location: " + location.toString());
+            log.debug("Persisted location: {}", location.toString());
         } else {
-            log.warn("Failed to persist location");
+            log.error("Failed to persist location: {}", location.toString());
         }
     }
 
@@ -302,18 +304,18 @@ public class LocationService extends Service {
                 try {
                     jsonLocations.put(location.toJSONObject());
                 } catch (JSONException e) {
-                    log.warn("location to json failed" + location.toString());
+                    log.warn("Location to json failed: {}", location.toString());
                     return false;
                 }
             }
 
-            log.debug("Posting json to url: " + config.getUrl() + " headers: " + config.getHttpHeaders());
+            log.debug("Posting json to url: {} headers: {}", config.getUrl(), config.getHttpHeaders());
             int response;
 
             try {
                 response = HttpPostService.postJSON(config.getUrl(), jsonLocations, config.getHttpHeaders());
             } catch (Throwable e) {
-                log.warn("Error while posting locations: ", e.getMessage());
+                log.warn("Error while posting locations: {}", e.getMessage());
                 response = 0;
             }
 

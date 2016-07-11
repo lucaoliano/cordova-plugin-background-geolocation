@@ -285,7 +285,7 @@ public class Config implements Parcelable
     @Override
     public String toString () {
         return new StringBuffer()
-                .append("Config: distanceFilter=").append(getDistanceFilter())
+                .append("Config[distanceFilter=").append(getDistanceFilter())
                 .append(" stationaryRadius=").append(getStationaryRadius())
                 .append(" desiredAccuracy=").append(getDesiredAccuracy())
                 .append(" isDebugging=").append(isDebugging())
@@ -304,6 +304,7 @@ public class Config implements Parcelable
                 .append(" startForeground=").append(getStartForeground())
                 .append(" locationProvider=").append(getLocationProvider())
                 .append(" stopOnStillActivity=").append(getStopOnStillActivity())
+                .append("]")
                 .toString();
     }
 

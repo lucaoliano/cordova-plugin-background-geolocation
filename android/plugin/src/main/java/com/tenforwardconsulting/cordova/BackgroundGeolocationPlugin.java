@@ -178,7 +178,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
     @Override
     protected void pluginInitialize() {
         log = LoggerManager.getLogger(BackgroundGeolocationPlugin.class);
-        log.debug(TAG, "initializing plugin");
+        log.info("initializing plugin");
 
         super.pluginInitialize();
         executorService =  Executors.newSingleThreadExecutor();
@@ -191,6 +191,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
 
         if (ACTION_START.equals(action)) {
             if (!hasPermissions()) {
+                log.info("Requesting permissions from user");
                 actionStartCallbackContext = callbackContext;
                 PermissionHelper.requestPermissions(this, START_REQ_CODE, permissions);
                 return true;
@@ -199,6 +200,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
             executorService.execute(new Runnable() {
                 public void run() {
                     if (config == null) {
+                        log.warn("Attempt to start unconfigured service");
                         callbackContext.error("Plugin not configured. Please call configure method first.");
                         return;
                     }
@@ -226,11 +228,12 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
                     try {
                         config = Config.fromJSONArray(data);
                         persistConfiguration(config);
-                        log.debug("bg service configured: " + config.toString());
                         // callbackContext.success(); //we cannot do this
                     } catch (JSONException e) {
+                        log.error("Configuration error: {}", e.getMessage());
                         callbackContext.error("Configuration error: " + e.getMessage());
                     } catch (NullPointerException e) {
+                        log.error("Configuration error: {}", e.getMessage());
                         callbackContext.error("Configuration error: " + e.getMessage());
                     }
 
@@ -240,17 +243,19 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
                         } else {
                             LoggerManager.disableDBLogging();
                         }
+                        log.debug("Service configured: {}", config.toString());
                     }
                 }
             });
 
             return true;
         } else if (ACTION_LOCATION_ENABLED_CHECK.equals(action)) {
-            log.debug("location services enabled check");
+            log.debug("Location services enabled check");
             try {
                 int isLocationEnabled = BackgroundGeolocationPlugin.isLocationEnabled(context) ? 1 : 0;
                 callbackContext.success(isLocationEnabled);
             } catch (SettingNotFoundException e) {
+                log.error("Location service checked failed: {}", e.getMessage());
                 callbackContext.error("Location setting error occured");
             }
 
@@ -276,6 +281,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
                     try {
                         callbackContext.success(getAllLocations());
                     } catch (JSONException e) {
+                        log.error("Getting all locations failed: {}", e.getMessage());
                         callbackContext.error("Converting locations to JSON failed.");
                     }
                 }
@@ -285,11 +291,14 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
         } else if (ACTION_DELETE_LOCATION.equals(action)) {
             cordova.getThreadPool().execute(new Runnable() {
                 public void run() {
+                    Long locationId = null;
                     try {
-                        deleteLocation(data.getLong(0));
+                        locationId = data.getLong(0);
+                        deleteLocation(locationId);
                         callbackContext.success();
                     } catch (JSONException e) {
-                        callbackContext.error("Configuration error: " + e.getMessage());
+                        log.error("Delete location {} failed: {}", locationId, e.getMessage());
+                        callbackContext.error("Deleting location failed: " + e.getMessage());
                     }
                 }
             });
