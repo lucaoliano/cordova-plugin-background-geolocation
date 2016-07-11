@@ -107,7 +107,7 @@ public class LocationService extends Service {
     @Override
     public void onCreate() {
         log = LoggerManager.getLogger(LocationService.class);
-        log.info("OnCreate");
+        log.info("Creating LocationService");
 
         super.onCreate();
         dao = (DAOFactory.createLocationDAO(this));
@@ -115,7 +115,7 @@ public class LocationService extends Service {
 
     @Override
     public void onDestroy() {
-        log.warn("Destroying Location Service");
+        log.info("Destroying LocationService");
         provider.onDestroy();
 //        stopForeground(true);
         super.onDestroy();
@@ -126,10 +126,10 @@ public class LocationService extends Service {
     public void onTaskRemoved(Intent rootIntent) {
         log.debug("Task has been removed");
         if (config.getStopOnTerminate()) {
-            log.debug("Stopping self");
+            log.info("Stopping self");
             stopSelf();
         } else {
-            log.debug("Continue running in background");
+            log.info("Continue running in background");
 //            Intent intent = new Intent( this, DummyActivity.class );
 //            intent.addFlags( Intent.FLAG_ACTIVITY_NEW_TASK );
 //            startActivity(intent);
@@ -313,7 +313,7 @@ public class LocationService extends Service {
             try {
                 response = HttpPostService.postJSON(config.getUrl(), jsonLocations, config.getHttpHeaders());
             } catch (Throwable e) {
-                log.warn("Exception posting json", e);
+                log.warn("Error while posting locations: ", e.getMessage());
                 response = 0;
             }
 
@@ -338,7 +338,7 @@ public class LocationService extends Service {
 
         @Override
         protected void onPostExecute(Boolean result) {
-            log.debug("PostLocationTask#onPostExecture");
+            log.debug("PostLocationTask#onPostExecute");
         }
     }
 }

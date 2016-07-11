@@ -11,6 +11,7 @@ public class LogEntry {
     private String level;
     private String message;
     private Long timestamp;
+    private String loggerName;
 
     public Integer getContext() {
         return context;
@@ -44,12 +45,21 @@ public class LogEntry {
         this.timestamp = timestamp;
     }
 
+    public String getLoggerName() {
+        return loggerName;
+    }
+
+    public void setLoggerName(String loggerName) {
+        this.loggerName = loggerName;
+    }
+
     public JSONObject toJSONObject() throws JSONException {
         JSONObject json = new JSONObject();
         json.put("context", this.context);
         json.put("level", this.level);
         json.put("message", this.message);
         json.put("timestamp", this.timestamp);
+        json.put("logger", this.loggerName);
 
         return json;
     }

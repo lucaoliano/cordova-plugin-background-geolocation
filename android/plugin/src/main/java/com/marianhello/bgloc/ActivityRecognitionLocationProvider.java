@@ -48,7 +48,7 @@ public class ActivityRecognitionLocationProvider extends AbstractLocationProvide
 
     public void onCreate() {
         log = LoggerManager.getLogger(ActivityRecognitionLocationProvider.class);
-        log.info("onCreate");
+        log.info("Creating ActivityRecognitionLocationProvider");
 
         super.onCreate();
 
@@ -277,7 +277,7 @@ public class ActivityRecognitionLocationProvider extends AbstractLocationProvide
 
     public void onDestroy() {
         super.onDestroy();
-        log.debug("onDestroy");
+        log.info("Destroying ActivityRecognitionLocationProvider");
         stopRecording();
         disconnectFromPlayAPI();
         unregisterReceiver(detectedActivitiesReceiver);

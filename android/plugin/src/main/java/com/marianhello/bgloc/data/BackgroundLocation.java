@@ -160,17 +160,17 @@ public class BackgroundLocation implements Parcelable {
     @Override
     public String toString () {
         return new StringBuffer()
-            .append("Location: id=").append(getLocationId())
+            .append("Location[id=").append(getLocationId())
             .append(" time=").append(getTime())
             .append(" lat=").append(getLatitude())
             .append(" lon=").append(getLongitude())
-            .append(" accu=").append(getAccuracy())
+            .append(" acy=").append(getAccuracy())
             .append(" speed=").append(getSpeed())
             .append(" alt=").append(getAltitude())
             .append(" bear=").append(getBearing())
             .append(" prov=").append(getProvider())
             .append(" locprov=").append(getLocationProvider())
-            .append(" debug=").append(getDebug())
+            .append(" debug=").append(getDebug()).append("]")
             .toString();
     }
 

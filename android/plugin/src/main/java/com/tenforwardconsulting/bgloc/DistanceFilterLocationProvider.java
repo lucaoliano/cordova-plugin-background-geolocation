@@ -84,7 +84,7 @@ public class DistanceFilterLocationProvider extends AbstractLocationProvider imp
     @Override
     public void onCreate() {
         log = LoggerManager.getLogger(DistanceFilterLocationProvider.class);
-        log.info("onCreate");
+        log.info("Creating DistanceFilterLocationProvider");
 
         super.onCreate();
 
@@ -390,7 +390,7 @@ public class DistanceFilterLocationProvider extends AbstractLocationProvider imp
 
         // TODO http://www.cse.buffalo.edu/~demirbas/publications/proximity.pdf
         // determine if we're almost out of stationary-distance and increase monitoring-rate.
-        log.info(" distance from stationary location: {}", distance);
+        log.info("distance from stationary location: {}", distance);
         if (distance > stationaryRadius) {
             onExitStationaryRegion(location);
         } else if (distance > 0) {
@@ -491,7 +491,7 @@ public class DistanceFilterLocationProvider extends AbstractLocationProvider imp
     @Override
     public void onDestroy() {
         super.onDestroy();
-        log.info("onDestroy");
+        log.info("Destroying DistanceFilterLocationProvider");
 
         locationManager.removeUpdates(this);
         alarmManager.cancel(stationaryAlarmPI);

@@ -487,7 +487,7 @@ function printAndroidLogs(logEntries) {
     var d = new Date(logEntry.timestamp);
     var dateStr = [d.getFullYear(), padLeft(d.getMonth()+1,2), padLeft(d.getDate(),2)].join('/');
     var timeStr = [padLeft(d.getHours(),2), padLeft(d.getMinutes(),2), padLeft(d.getSeconds(),2)].join(':');
-    return ['%c[', dateStr, ' ', timeStr, '] %c', logEntry.message].join('');
+    return ['%c[', dateStr, ' ', timeStr, '] %c', logEntry.logger, ':', logEntry.message].join('');
   }
 
   return printLogs(logEntries, androidLogFormatter, COLORS);

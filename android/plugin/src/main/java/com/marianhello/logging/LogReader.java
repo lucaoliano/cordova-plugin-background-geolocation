@@ -78,6 +78,7 @@ public class LogReader {
         entry.setLevel(c.getString(c.getColumnIndex(dbNameResolver.getColumnName(ColumnName.LEVEL_STRING))));
         entry.setMessage(c.getString(c.getColumnIndex(dbNameResolver.getColumnName(ColumnName.FORMATTED_MESSAGE))));
         entry.setTimestamp(c.getLong(c.getColumnIndex(dbNameResolver.getColumnName(ColumnName.TIMESTMP))));
+        entry.setLoggerName(c.getString(c.getColumnIndex(dbNameResolver.getColumnName(ColumnName.LOGGER_NAME))));
 
         return entry;
     }
