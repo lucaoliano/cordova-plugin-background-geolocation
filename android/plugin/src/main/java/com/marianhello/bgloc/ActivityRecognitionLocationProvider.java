@@ -1,7 +1,5 @@
 package com.marianhello.bgloc;
 
-import java.util.ArrayList;
-
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -12,15 +10,18 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.util.Log;
 import android.widget.Toast;
+
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.ActivityRecognition;
+import com.google.android.gms.location.ActivityRecognitionResult;
+import com.google.android.gms.location.DetectedActivity;
+import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.ActivityRecognition;
-import com.google.android.gms.location.DetectedActivity;
-import com.google.android.gms.location.ActivityRecognitionResult;
-import com.marianhello.logging.LoggerFactory;
+import com.marianhello.logging.LoggerManager;
+
+import java.util.ArrayList;
 
 public class ActivityRecognitionLocationProvider extends AbstractLocationProvider implements GoogleApiClient.ConnectionCallbacks,
     GoogleApiClient.OnConnectionFailedListener, LocationListener {
@@ -46,7 +47,7 @@ public class ActivityRecognitionLocationProvider extends AbstractLocationProvide
     }
 
     public void onCreate() {
-        log = LoggerFactory.getLogger(ActivityRecognitionLocationProvider.class);
+        log = LoggerManager.getLogger(ActivityRecognitionLocationProvider.class);
         log.info("onCreate");
 
         super.onCreate();

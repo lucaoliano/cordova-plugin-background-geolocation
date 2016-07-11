@@ -35,14 +35,14 @@ import android.text.TextUtils;
 
 import com.marianhello.bgloc.Config;
 import com.marianhello.bgloc.LocationService;
-import com.marianhello.logging.LogEntry;
-import com.marianhello.logging.LogReader;
-import com.marianhello.logging.LoggerFactory;
 import com.marianhello.bgloc.data.BackgroundLocation;
 import com.marianhello.bgloc.data.ConfigurationDAO;
 import com.marianhello.bgloc.data.DAOFactory;
 import com.marianhello.bgloc.data.LocationDAO;
 import com.marianhello.cordova.PermissionHelper;
+import com.marianhello.logging.LogEntry;
+import com.marianhello.logging.LogReader;
+import com.marianhello.logging.LoggerManager;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
@@ -177,7 +177,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
 
     @Override
     protected void pluginInitialize() {
-        log = LoggerFactory.getLogger(BackgroundGeolocationPlugin.class);
+        log = LoggerManager.getLogger(BackgroundGeolocationPlugin.class);
         log.debug(TAG, "initializing plugin");
 
         super.pluginInitialize();
@@ -232,6 +232,14 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
                         callbackContext.error("Configuration error: " + e.getMessage());
                     } catch (NullPointerException e) {
                         callbackContext.error("Configuration error: " + e.getMessage());
+                    }
+
+                    if (config != null) {
+                        if (config.isDebugging()) {
+                            LoggerManager.enableDBLogging();
+                        } else {
+                            LoggerManager.disableDBLogging();
+                        }
                     }
                 }
             });

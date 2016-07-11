@@ -25,14 +25,16 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.widget.Toast;
-import java.util.List;
-import static java.lang.Math.pow;
-import static java.lang.Math.round;
-import static java.lang.Math.abs;
 
 import com.marianhello.bgloc.AbstractLocationProvider;
 import com.marianhello.bgloc.LocationService;
-import com.marianhello.logging.LoggerFactory;
+import com.marianhello.logging.LoggerManager;
+
+import java.util.List;
+
+import static java.lang.Math.abs;
+import static java.lang.Math.pow;
+import static java.lang.Math.round;
 
 
 public class DistanceFilterLocationProvider extends AbstractLocationProvider implements LocationListener {
@@ -81,7 +83,7 @@ public class DistanceFilterLocationProvider extends AbstractLocationProvider imp
 
     @Override
     public void onCreate() {
-        log = LoggerFactory.getLogger(DistanceFilterLocationProvider.class);
+        log = LoggerManager.getLogger(DistanceFilterLocationProvider.class);
         log.info("OnCreate");
 
         super.onCreate();

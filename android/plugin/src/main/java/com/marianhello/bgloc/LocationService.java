@@ -17,26 +17,26 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
-import android.os.AsyncTask;
-import android.os.Build;
 import android.support.v4.app.NotificationCompat;
 
 import com.marianhello.bgloc.data.BackgroundLocation;
 import com.marianhello.bgloc.data.DAOFactory;
 import com.marianhello.bgloc.data.LocationDAO;
-import com.marianhello.logging.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Random;
+import com.marianhello.logging.LoggerManager;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+
+import java.util.ArrayList;
+import java.util.Random;
 
 public class LocationService extends Service {
     private static final String TAG = LocationService.class.getSimpleName();
@@ -105,7 +105,7 @@ public class LocationService extends Service {
 
     @Override
     public void onCreate() {
-        log = LoggerFactory.getLogger(LocationService.class);
+        log = LoggerManager.getLogger(LocationService.class);
         log.info("OnCreate");
 
         super.onCreate();

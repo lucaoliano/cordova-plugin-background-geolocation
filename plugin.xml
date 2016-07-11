@@ -41,7 +41,7 @@
         <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/data/sqlite/SQLiteLocationDAO.java" target-dir="src/com/marianhello/bgloc/data/sqlite" />
         <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/data/sqlite/SQLiteOpenHelper.java" target-dir="src/com/marianhello/bgloc/data/sqlite" />
         <source-file src="android/plugin/src/main/java/com/marianhello/logging/LogEntry.java" target-dir="src/com/marianhello/logging" />
-        <source-file src="android/plugin/src/main/java/com/marianhello/logging/LoggerFactory.java" target-dir="src/com/marianhello/logging" />
+        <source-file src="android/plugin/src/main/java/com/marianhello/logging/LoggerManager.java" target-dir="src/com/marianhello/logging" />
         <source-file src="android/plugin/src/main/java/com/marianhello/logging/LogReader.java" target-dir="src/com/marianhello/logging" />
         <source-file src="android/plugin/src/main/java/com/marianhello/logging/SQLBuilder.java" target-dir="src/com/marianhello/bgloc/logging" />
         <source-file src="android/plugin/src/main/java/com/marianhello/cordova/PermissionHelper.java" target-dir="src/com/marianhello/cordova"/>
