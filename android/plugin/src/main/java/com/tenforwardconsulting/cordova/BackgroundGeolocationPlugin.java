@@ -319,7 +319,8 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
                     try {
                         callbackContext.success(retrieveConfiguration());
                     } catch (JSONException e) {
-                        callbackContext.error("Configuration error: " + e.getMessage());
+                        log.error("Error getting config: {}", e.getMessage());
+                        callbackContext.error("Error getting config: " + e.getMessage());
                     }
                 }
             });
@@ -343,12 +344,44 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
     }
 
     /**
-     * Override method in CordovaPlugin.
+     * Called when the system is about to start resuming a previous activity.
+     *
+     * @param multitasking		Flag indicating if multitasking is turned on for app
+     */
+    public void onPause(boolean multitasking) {
+        log.info("App will be paused multitasking={}", multitasking);
+    }
+
+    /**
+     * Called when the activity will start interacting with the user.
+     *
+     * @param multitasking		Flag indicating if multitasking is turned on for app
+     */
+    public void onResume(boolean multitasking) {
+        log.info("App will be resumed multitasking={}", multitasking);
+    }
+
+    /**
+     * Called when the activity is becoming visible to the user.
+     */
+    public void onStart() {
+        log.info("App is started");
+    }
+
+    /**
+     * Called when the activity is no longer visible to the user.
+     */
+    public void onStop() {
+        log.info("App is stopped");
+    }
+
+    /**
+     * The final call you receive before your activity is destroyed.
      * Checks to see if it should turn off
      */
      @Override
     public void onDestroy() {
-        log.debug("destroying plugin");
+        log.info("Destroying plugin");
         unregisterLocationModeChangeReceiver();
         // Unbind from the service
         doUnbindService();
@@ -369,6 +402,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
 
     protected void startBackgroundService () {
         if (!isServiceRunning) {
+            log.info("Starting bg service");
             Activity activity = this.cordova.getActivity();
             Intent locationServiceIntent = new Intent(activity, LocationService.class);
             locationServiceIntent.putExtra("config", config);
@@ -381,7 +415,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
 
     protected void stopBackgroundService() {
         if (isServiceRunning) {
-            log.debug("Stopping bg service");
+            log.info("Stopping bg service");
             Activity activity = this.cordova.getActivity();
             activity.stopService(new Intent(activity, LocationService.class));
             isServiceRunning = false;
@@ -393,6 +427,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
         // class name because there is no reason to be able to let other
         // applications replace our component.
         if (!mIsBound) {
+            log.info("Binding to bg service");
             Activity activity = this.cordova.getActivity();
             Intent locationServiceIntent = new Intent(activity, LocationService.class);
             locationServiceIntent.putExtra("config", config);
@@ -402,6 +437,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
 
     void doUnbindService () {
         if (mIsBound) {
+            log.info("Unbinding from bg service");
             // If we have received the service, and hence registered with
             // it, then now is the time to unregister.
             if (mService != null) {
@@ -515,7 +551,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
         int[] grantResults) throws JSONException {
         for (int r : grantResults) {
             if (r == PackageManager.PERMISSION_DENIED) {
-                log.debug("Permission Denied!");
+                log.info("Permission Denied!");
                 actionStartCallbackContext.error(PERMISSION_DENIED_ERROR);
                 actionStartCallbackContext = null;
                 return;

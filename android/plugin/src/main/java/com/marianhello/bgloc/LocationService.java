@@ -260,7 +260,9 @@ public class LocationService extends Service {
     }
 
     public void persistLocation (BackgroundLocation location) {
-        if (dao.persistLocation(location) > -1) {
+        Long locationId = dao.persistLocation(location);
+        if (locationId > -1) {
+            location.setLocationId(locationId);
             log.debug("Persisted location: {}", location.toString());
         } else {
             log.error("Failed to persist location: {}", location.toString());
