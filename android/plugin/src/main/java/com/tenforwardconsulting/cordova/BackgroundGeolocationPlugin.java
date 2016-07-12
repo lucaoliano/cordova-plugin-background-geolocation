@@ -365,14 +365,14 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
      * Called when the activity is becoming visible to the user.
      */
     public void onStart() {
-        log.info("App is started");
+        log.info("App is visible");
     }
 
     /**
      * Called when the activity is no longer visible to the user.
      */
     public void onStop() {
-        log.info("App is stopped");
+        log.info("App is no longer visible");
     }
 
     /**
