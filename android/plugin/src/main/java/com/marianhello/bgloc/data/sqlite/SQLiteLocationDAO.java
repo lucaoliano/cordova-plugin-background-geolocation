@@ -6,7 +6,9 @@ import java.util.Collection;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
+import android.location.Location;
 import android.util.Log;
 
 import com.marianhello.bgloc.data.LocationDAO;
@@ -14,20 +16,39 @@ import com.marianhello.bgloc.data.BackgroundLocation;
 import com.marianhello.bgloc.data.sqlite.LocationContract.LocationEntry;
 
 public class SQLiteLocationDAO implements LocationDAO {
-  public static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm'Z'";
   private static final String TAG = SQLiteLocationDAO.class.getSimpleName();
-  private Context context;
+
+  private SQLiteDatabase db;
 
   public SQLiteLocationDAO(Context context) {
-    this.context = context;
+    SQLiteOpenHelper helper = SQLiteOpenHelper.getHelper(context);
+    this.db = helper.getWritableDatabase();
   }
 
-  public Collection<BackgroundLocation> getAllLocations() {
-    SQLiteDatabase db = null;
+  public SQLiteLocationDAO(SQLiteDatabase db) {
+    this.db = db;
+  }
+
+  public long getLastInsertRowId(SQLiteDatabase db) {
+    Cursor cur = db.rawQuery("SELECT last_insert_rowid()", null);
+    cur.moveToFirst();
+    long id = cur.getLong(0);
+    cur.close();
+    return id;
+  }
+
+  /**
+   * Get all locations that match whereClause
+   *
+   * @param whereClause
+   * @param whereArgs
+   * @return collection of locations
+     */
+  private Collection<BackgroundLocation> getLocations(String whereClause, String[] whereArgs) {
     Cursor cursor = null;
 
     String[] columns = {
-    	LocationEntry._ID,
+      LocationEntry._ID,
       LocationEntry.COLUMN_NAME_TIME,
       LocationEntry.COLUMN_NAME_ACCURACY,
       LocationEntry.COLUMN_NAME_SPEED,
@@ -40,17 +61,13 @@ public class SQLiteLocationDAO implements LocationDAO {
       LocationEntry.COLUMN_NAME_DEBUG
     };
 
-    String whereClause = null;
-    String[] whereArgs = null;
     String groupBy = null;
     String having = null;
 
-    String orderBy =
-        LocationEntry.COLUMN_NAME_TIME + " ASC";
+    String orderBy = LocationEntry.COLUMN_NAME_TIME + " ASC";
 
     Collection<BackgroundLocation> all = new ArrayList<BackgroundLocation>();
     try {
-      db = new SQLiteOpenHelper(context).getReadableDatabase();
       cursor = db.query(
           LocationEntry.TABLE_NAME,  // The table to query
           columns,                   // The columns to return
@@ -67,43 +84,140 @@ public class SQLiteLocationDAO implements LocationDAO {
       if (cursor != null) {
         cursor.close();
       }
-      if (db != null) {
-        db.close();
-      }
     }
     return all;
   }
 
+  public Collection<BackgroundLocation> getAllLocations() {
+    return getLocations(null, null);
+  }
+
+  public Collection<BackgroundLocation> getValidLocations() {
+    String whereClause = LocationEntry.COLUMN_NAME_VALID + " = ?";
+    String[] whereArgs = { "1" };
+
+    return getLocations(whereClause, whereArgs);
+  }
+
+  /**
+   * Persist location into database
+   *
+   * @param location
+   * @return rowId or -1 when error occured
+   */
   public Long persistLocation(BackgroundLocation location) {
-    SQLiteDatabase db = new SQLiteOpenHelper(context).getWritableDatabase();
-    db.beginTransaction();
     ContentValues values = getContentValues(location);
     long rowId = db.insert(LocationEntry.TABLE_NAME, LocationEntry.COLUMN_NAME_NULLABLE, values);
-    Log.d(TAG, "After insert, rowId = " + rowId);
-    db.setTransactionSuccessful();
-    db.endTransaction();
-    db.close();
+    Log.d(TAG, "Location persisted with id=" + rowId);
     return rowId;
   }
 
-  public void deleteLocation(Long locationId) {
-    String whereClause = LocationEntry._ID + " = ?";
-    String[] whereArgs = { String.valueOf(locationId) };
-    SQLiteDatabase db = new SQLiteOpenHelper(context).getWritableDatabase();
+  /**
+   * Persist location into database with maximum row limit
+   *
+   * Method will ensure that there will be no more records than maxRows.
+   * Instead old records will be replaced with newer ones.
+   * If maxRows will change in time, method will delete excess records and vacuum table.
+   *
+   * @param location
+   * @param maxRows
+   * @return rowId or -1 when error occured
+   */
+  public Long persistLocationWithLimit(BackgroundLocation location, Integer maxRows) {
+    Long rowId = null;
+    String sql = null;
+    Boolean shouldVacuum = false;
+
+    long rowCount = DatabaseUtils.queryNumEntries(db, LocationEntry.TABLE_NAME);
+
+    if (rowCount < maxRows) {
+      ContentValues values = getContentValues(location);
+      rowId = db.insert(LocationEntry.TABLE_NAME, LocationEntry.COLUMN_NAME_NULLABLE, values);
+      Log.d(TAG, "Location persisted with id=" + rowId);
+
+      return rowId;
+    }
+
     db.beginTransaction();
-    db.delete(LocationEntry.TABLE_NAME, whereClause, whereArgs);
+
+    if (rowCount > maxRows) {
+      sql = new StringBuilder("DELETE FROM ")
+              .append(LocationEntry.TABLE_NAME)
+              .append(" WHERE ").append(LocationEntry._ID)
+              .append(" IN (SELECT ").append(LocationEntry._ID)
+              .append(" FROM ").append(LocationEntry.TABLE_NAME)
+              .append(" ORDER BY ").append(LocationEntry.COLUMN_NAME_TIME)
+              .append(" LIMIT ?)")
+              .toString();
+      db.execSQL(sql, new Object[] {(rowCount - maxRows)});
+      shouldVacuum = true;
+    }
+
+    sql = new StringBuilder("UPDATE ")
+            .append(LocationEntry.TABLE_NAME).append(" SET ")
+            .append(LocationEntry.COLUMN_NAME_ACCURACY).append("= ?,")
+            .append(LocationEntry.COLUMN_NAME_ALTITUDE).append("= ?,")
+            .append(LocationEntry.COLUMN_NAME_BEARING).append("= ?,")
+            .append(LocationEntry.COLUMN_NAME_LATITUDE).append("= ?,")
+            .append(LocationEntry.COLUMN_NAME_LONGITUDE).append("= ?,")
+            .append(LocationEntry.COLUMN_NAME_SPEED).append("= ?,")
+            .append(LocationEntry.COLUMN_NAME_TIME).append("= ?,")
+            .append(LocationEntry.COLUMN_NAME_PROVIDER).append("= ?,")
+            .append(LocationEntry.COLUMN_NAME_LOCATION_PROVIDER).append("= ?,")
+            .append(LocationEntry.COLUMN_NAME_DEBUG).append("= ?,")
+            .append(LocationEntry.COLUMN_NAME_VALID).append("= 1")
+            .append(" WHERE ").append(LocationEntry.COLUMN_NAME_TIME)
+            .append("= (SELECT min(").append(LocationEntry.COLUMN_NAME_TIME).append(") FROM ")
+            .append(LocationEntry.TABLE_NAME).append(")")
+            .toString();
+    db.execSQL(sql, new Object[] {
+            location.getAccuracy(),
+            location.getAltitude(),
+            location.getBearing(),
+            location.getLatitude(),
+            location.getLongitude(),
+            location.getSpeed(),
+            location.getTime(),
+            location.getProvider(),
+            location.getLocationProvider(),
+            location.getDebug() ? "1" : "0"
+    });
+
+    rowId = getLastInsertRowId(db);
     db.setTransactionSuccessful();
     db.endTransaction();
-    db.close();
+
+    if (shouldVacuum) { db.execSQL("VACUUM"); }
+
+    return rowId;
   }
 
+  /**
+   * Delete location by given locationId
+   *
+   * Note: location is not actually deleted only flagged as non valid
+   * @param locationId
+   */
+  public void deleteLocation(Long locationId) {
+    ContentValues values = new ContentValues();
+    values.put(LocationEntry.COLUMN_NAME_VALID, 0);
+
+    String whereClause = LocationEntry._ID + " = ?";
+    String[] whereArgs = { String.valueOf(locationId) };
+
+    db.update(LocationEntry.TABLE_NAME, values, whereClause, whereArgs);
+  }
+
+  /**
+   * Delete all locations
+   *
+   * Note: location are not actually deleted only flagged as non valid
+   */
   public void deleteAllLocations() {
-    SQLiteDatabase db = new SQLiteOpenHelper(context).getWritableDatabase();
-    db.beginTransaction();
-    db.delete(LocationEntry.TABLE_NAME, null, null);
-    db.setTransactionSuccessful();
-    db.endTransaction();
-    db.close();
+    ContentValues values = new ContentValues();
+    values.put(LocationEntry.COLUMN_NAME_VALID, 0);
+
+    db.update(LocationEntry.TABLE_NAME, values, null, null);
   }
 
   private BackgroundLocation hydrate(Cursor c) {
@@ -134,6 +248,7 @@ public class SQLiteLocationDAO implements LocationDAO {
     values.put(LocationEntry.COLUMN_NAME_PROVIDER, location.getProvider());
     values.put(LocationEntry.COLUMN_NAME_LOCATION_PROVIDER, location.getLocationProvider());
     values.put(LocationEntry.COLUMN_NAME_DEBUG, (location.getDebug() == true) ? 1 : 0);
+    values.put(LocationEntry.COLUMN_NAME_VALID, 1);
 
     return values;
   }

@@ -227,6 +227,8 @@ public class LocationService extends Service {
     public void handleLocation (BackgroundLocation location) {
         // Boolean shouldPersists = mClients.size() == 0;
 
+        persistLocation(location);
+
         for (int i = mClients.size() - 1; i >= 0; i--) {
             try {
                 Bundle bundle = new Bundle();
@@ -243,24 +245,14 @@ public class LocationService extends Service {
             }
         }
 
-        if (config.getUrl() != null && !config.getUrl().isEmpty()) {
+        if (config.hasUrl()) {
             postLocation(location);
         }
-
-        if (config.isDebugging()) {
-            BackgroundLocation cloned = location.makeClone();
-            cloned.setDebug(true);
-            persistLocation(cloned);
-        }
-
-        // if (shouldPersists) {
-        //     log.debug("Persisting location. Reason: Main activity was probably killed.");
-        //     persistLocation(location);
-        // }
     }
 
+    // method has side effects
     public void persistLocation (BackgroundLocation location) {
-        Long locationId = dao.persistLocation(location);
+        Long locationId = dao.persistLocationWithLimit(location, config.getMaxLocations());
         if (locationId > -1) {
             location.setLocationId(locationId);
             log.debug("Persisted location: {}", location.toString());
@@ -326,13 +318,6 @@ public class LocationService extends Service {
                     Long locationId = location.getLocationId();
                     if (locationId != null) {
                         dao.deleteLocation(locationId);
-                    }
-                }
-            } else {
-                for (BackgroundLocation location : locations) {
-                    Long locationId = location.getLocationId();
-                    if (locationId == null) {
-                        persistLocation(location);
                     }
                 }
             }

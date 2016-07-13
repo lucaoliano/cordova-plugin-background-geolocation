@@ -1,5 +1,16 @@
 ## Changelog
 
+### [2.2.0] - unreleased
+### Added
+- Android showAppSettings
+- database logging (getLogEntries)
+- autosync locations to server with configurable threshold
+- maxLocations limit
+- method getValidLocations
+
+### Changed
+- Locations stored into db at all times
+
 ### [2.1.2] - 2016-06-23
 ### Fixed
 - iOS database not created

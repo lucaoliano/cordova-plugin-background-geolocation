@@ -22,6 +22,7 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -63,9 +64,11 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
     public static final String ACTION_CONFIGURE = "configure";
     public static final String ACTION_LOCATION_ENABLED_CHECK = "isLocationEnabled";
     public static final String ACTION_SHOW_LOCATION_SETTINGS = "showLocationSettings";
+    public static final String ACTION_SHOW_APP_SETTINGS = "showAppSettings";
     public static final String REGISTER_MODE_CHANGED_RECEIVER = "watchLocationMode";
     public static final String UNREGISTER_MODE_CHANGED_RECEIVER = "stopWatchingLocationMode";
     public static final String ACTION_GET_ALL_LOCATIONS = "getLocations";
+    public static final String ACTION_GET_VALID_LOCATIONS = "getValidLocations";
     public static final String ACTION_DELETE_LOCATION = "deleteLocation";
     public static final String ACTION_DELETE_ALL_LOCATIONS = "deleteAllLocations";
     public static final String ACTION_GET_CONFIG = "getConfig";
@@ -265,6 +268,11 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
             // TODO: call success/fail callback
 
             return true;
+        } else if (ACTION_SHOW_APP_SETTINGS.equals(action)) {
+            showAppSettings();
+            // TODO: call success/fail callback
+
+            return true;
         } else if (REGISTER_MODE_CHANGED_RECEIVER.equals(action)) {
             registerLocationModeChangeReceiver(callbackContext);
             // TODO: call success/fail callback
@@ -288,16 +296,28 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
             });
 
             return true;
+        } else if (ACTION_GET_VALID_LOCATIONS.equals(action)) {
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                    try {
+                        callbackContext.success(getValidLocations());
+                    } catch (JSONException e) {
+                        log.error("Getting valid locations failed: {}", e.getMessage());
+                        callbackContext.error("Converting locations to JSON failed.");
+                    }
+                }
+            });
+
+            return true;
         } else if (ACTION_DELETE_LOCATION.equals(action)) {
             cordova.getThreadPool().execute(new Runnable() {
                 public void run() {
-                    Long locationId = null;
                     try {
-                        locationId = data.getLong(0);
+                        Long locationId = data.getLong(0);
                         deleteLocation(locationId);
                         callbackContext.success();
                     } catch (JSONException e) {
-                        log.error("Delete location {} failed: {}", locationId, e.getMessage());
+                        log.error("Delete location failed: {}", e.getMessage());
                         callbackContext.error("Deleting location failed: " + e.getMessage());
                     }
                 }
@@ -480,6 +500,13 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
         cordova.getActivity().startActivity(settingsIntent);
     }
 
+    public void showAppSettings() {
+        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        Uri uri = Uri.fromParts("package", cordova.getActivity().getPackageName(), null);
+        intent.setData(uri);
+        getContext().startActivity(intent);
+    }
+
     public static boolean isLocationEnabled(Context context) throws SettingNotFoundException {
         int locationMode = 0;
         String locationProviders;
@@ -498,6 +525,18 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
         JSONArray jsonLocationsArray = new JSONArray();
         Collection<BackgroundLocation> locations = dao.getAllLocations();
         for (BackgroundLocation location : locations) {
+            JSONObject jsonLocation = location.toJSONObject();
+            jsonLocation.remove("locationId"); // do not expose internal locationId in this method
+            jsonLocationsArray.put(location.toJSONObject());
+        }
+        return jsonLocationsArray;
+    }
+
+    public JSONArray getValidLocations() throws JSONException {
+        JSONArray jsonLocationsArray = new JSONArray();
+        Collection<BackgroundLocation> locations = dao.getValidLocations();
+        for (BackgroundLocation location : locations) {
+            JSONObject jsonLocation = location.toJSONObject();
             jsonLocationsArray.put(location.toJSONObject());
         }
         return jsonLocationsArray;

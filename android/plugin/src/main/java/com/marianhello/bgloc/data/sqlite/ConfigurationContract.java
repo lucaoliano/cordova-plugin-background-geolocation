@@ -23,11 +23,15 @@ public final class ConfigurationContract {
         public static final String COLUMN_NAME_STOP_TERMINATE = "stop_terminate";
         public static final String COLUMN_NAME_START_BOOT = "start_boot";
         public static final String COLUMN_NAME_START_FOREGROUND = "start_foreground";
+        public static final String COLUMN_NAME_STOP_ON_STILL = "stop_still";
         public static final String COLUMN_NAME_LOCATION_PROVIDER = "service_provider";
         public static final String COLUMN_NAME_INTERVAL = "interval";
         public static final String COLUMN_NAME_FASTEST_INTERVAL = "fastest_interval";
         public static final String COLUMN_NAME_ACTIVITIES_INTERVAL = "activities_interval";
         public static final String COLUMN_NAME_URL = "url";
+        public static final String COLUMN_NAME_SYNC_URL = "sync_url";
+        public static final String COLUMN_NAME_SYNC_THRESHOLD = "sync_threshold";
         public static final String COLUMN_NAME_HEADERS = "http_headers";
+        public static final String COLUMN_NAME_MAX_LOCATIONS = "max_locations";
     }
 }

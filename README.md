@@ -197,7 +197,7 @@ Success callback parameter | Type | Description
 `enabled` | `Boolean` | true/false (true when location services are enabled)
 
 ### backgroundGeolocation.showAppSettings()
-Platform: iOS >= 8.0
+Platform: Android >= 6, iOS >= 8.0
 
 Show app settings to allow change of app location permissions.
 
@@ -226,18 +226,23 @@ Stop watching for location mode changes.
 Platform: iOS, Android
 
 Method will return all stored locations.
+This method is useful for initial rendering of user location on a map just after application launch.
+NOTE: Returned locations does not contain locationId.
 
 Success callback parameter | Type | Description
 -------------------------- | ---- | -----------
 `locations` | `Array` | collection of stored locations
 
-```javascript
-backgroundGeolocation.getLocations(
-  function (locations) {
-    console.log(locations);
-  }
-);
-```
+### backgroundGeolocation.getValidLocations(success, fail)
+Platform: iOS, Android
+
+Method will return locations, which has not been yet posted to server.
+NOTE: Locations does contain locationId.
+
+Success callback parameter | Type | Description
+-------------------------- | ---- | -----------
+`locations` | `Array` | collection of stored locations
+
 
 ### backgroundGeolocation.deleteLocation(locationId, success, fail)
 Platform: iOS, Android

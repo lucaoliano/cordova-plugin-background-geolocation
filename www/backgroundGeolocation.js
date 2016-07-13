@@ -165,6 +165,16 @@ var backgroundGeolocation = {
             'getLocations', []);
     },
 
+    getValidLocations: function(success, failure) {
+        if (typeof(success) !== 'function') {
+             throw 'BackgroundGeolocation#getValidLocations requires a success callback';
+        }
+        exec(success,
+            failure || emptyFnc,
+            'BackgroundGeolocation',
+            'getValidLocations', []);
+    },
+
     deleteLocation: function(locationId, success, failure) {
         exec(success || emptyFnc,
             failure || emptyFnc,
