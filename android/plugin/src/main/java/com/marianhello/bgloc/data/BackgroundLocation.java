@@ -177,7 +177,6 @@ public class BackgroundLocation implements Parcelable {
 
     public JSONObject toJSONObject() throws JSONException {
         JSONObject json = new JSONObject();
-        json.put("locationId", getLocationId());
         json.put("time", getTime());
         json.put("latitude", getLatitude());
         json.put("longitude", getLongitude());
@@ -191,4 +190,10 @@ public class BackgroundLocation implements Parcelable {
 
         return json;
   	}
+
+    public JSONObject toJSONObjectWithId() throws JSONException {
+        JSONObject json = this.toJSONObject();
+        json.put("locationId", getLocationId());
+        return json;
+    }
 }

@@ -45,7 +45,7 @@ public class SQLiteLocationDAO implements LocationDAO {
    * @return collection of locations
      */
   private Collection<BackgroundLocation> getLocations(String whereClause, String[] whereArgs) {
-    Cursor cursor = null;
+    Collection<BackgroundLocation> locations = new ArrayList<BackgroundLocation>();
 
     String[] columns = {
       LocationEntry._ID,
@@ -63,10 +63,9 @@ public class SQLiteLocationDAO implements LocationDAO {
 
     String groupBy = null;
     String having = null;
-
     String orderBy = LocationEntry.COLUMN_NAME_TIME + " ASC";
+    Cursor cursor = null;
 
-    Collection<BackgroundLocation> all = new ArrayList<BackgroundLocation>();
     try {
       cursor = db.query(
           LocationEntry.TABLE_NAME,  // The table to query
@@ -78,14 +77,14 @@ public class SQLiteLocationDAO implements LocationDAO {
           orderBy                    // The sort order
       );
       while (cursor.moveToNext()) {
-        all.add(hydrate(cursor));
+        locations.add(hydrate(cursor));
       }
     } finally {
       if (cursor != null) {
         cursor.close();
       }
     }
-    return all;
+    return locations;
   }
 
   public Collection<BackgroundLocation> getAllLocations() {
@@ -97,6 +96,27 @@ public class SQLiteLocationDAO implements LocationDAO {
     String[] whereArgs = { "1" };
 
     return getLocations(whereClause, whereArgs);
+  }
+
+  public Collection<BackgroundLocation> getLocationsForSync() {
+    Collection<BackgroundLocation> locations = null;
+    String whereClause = LocationEntry.COLUMN_NAME_VALID + " = ?";
+    String[] whereArgs = { "1" };
+
+    db.beginTransactionNonExclusive();
+    locations = getLocations(whereClause, whereArgs);
+
+    ContentValues values = new ContentValues();
+    values.put(LocationEntry.COLUMN_NAME_VALID, 0);
+    db.update(LocationEntry.TABLE_NAME, values, null, null);
+    db.setTransactionSuccessful();
+    db.endTransaction();
+
+    return locations;
+  }
+
+  public Long getLocationsCount() {
+    return DatabaseUtils.queryNumEntries(db, LocationEntry.TABLE_NAME);
   }
 
   /**
@@ -138,7 +158,7 @@ public class SQLiteLocationDAO implements LocationDAO {
       return rowId;
     }
 
-    db.beginTransaction();
+    db.beginTransactionNonExclusive();
 
     if (rowCount > maxRows) {
       sql = new StringBuilder("DELETE FROM ")

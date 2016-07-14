@@ -11,6 +11,10 @@
 ### Changed
 - Locations stored into db at all times
 
+### Fixed
+- Android permission error code: 2
+- Android on start err callback instead configure err callback
+
 ### [2.1.2] - 2016-06-23
 ### Fixed
 - iOS database not created

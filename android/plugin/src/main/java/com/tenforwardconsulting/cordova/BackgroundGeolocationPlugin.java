@@ -40,6 +40,7 @@ import com.marianhello.bgloc.data.BackgroundLocation;
 import com.marianhello.bgloc.data.ConfigurationDAO;
 import com.marianhello.bgloc.data.DAOFactory;
 import com.marianhello.bgloc.data.LocationDAO;
+import com.marianhello.cordova.JSONErrorFactory;
 import com.marianhello.cordova.PermissionHelper;
 import com.marianhello.logging.LogEntry;
 import com.marianhello.logging.LogReader;
@@ -75,7 +76,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
     public static final String ACTION_GET_LOG_ENTRIES = "getLogEntries";
 
     public static final int START_REQ_CODE = 0;
-    public static final int PERMISSION_DENIED_ERROR = 20;
+    public static final int PERMISSION_DENIED_ERROR_CODE = 2;
     public static final String[] permissions = { Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION };
 
     /** Messenger for communicating with the service. */
@@ -181,6 +182,8 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
     @Override
     protected void pluginInitialize() {
         log = LoggerManager.getLogger(BackgroundGeolocationPlugin.class);
+        LoggerManager.enableDBLogging();
+
         log.info("initializing plugin");
 
         super.pluginInitialize();
@@ -193,6 +196,12 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
         Context context = activity.getApplicationContext();
 
         if (ACTION_START.equals(action)) {
+            if (config == null) {
+                log.warn("Attempt to start unconfigured service");
+                callbackContext.error("Plugin not configured. Please call configure method first.");
+                return true;
+            }
+
             if (!hasPermissions()) {
                 log.info("Requesting permissions from user");
                 actionStartCallbackContext = callbackContext;
@@ -202,12 +211,6 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
 
             executorService.execute(new Runnable() {
                 public void run() {
-                    if (config == null) {
-                        log.warn("Attempt to start unconfigured service");
-                        callbackContext.error("Plugin not configured. Please call configure method first.");
-                        return;
-                    }
-
                     startAndBindBackgroundService();
                     callbackContext.success();
                 }
@@ -238,15 +241,6 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
                     } catch (NullPointerException e) {
                         log.error("Configuration error: {}", e.getMessage());
                         callbackContext.error("Configuration error: " + e.getMessage());
-                    }
-
-                    if (config != null) {
-                        if (config.isDebugging()) {
-                            LoggerManager.enableDBLogging();
-                        } else {
-                            LoggerManager.disableDBLogging();
-                        }
-                        log.debug("Service configured: {}", config.toString());
                     }
                 }
             });
@@ -502,8 +496,11 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
 
     public void showAppSettings() {
         Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-        Uri uri = Uri.fromParts("package", cordova.getActivity().getPackageName(), null);
-        intent.setData(uri);
+        intent.addCategory(Intent.CATEGORY_DEFAULT);
+        intent.setData(Uri.parse("package:" + getContext().getPackageName()));
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
         getContext().startActivity(intent);
     }
 
@@ -525,8 +522,6 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
         JSONArray jsonLocationsArray = new JSONArray();
         Collection<BackgroundLocation> locations = dao.getAllLocations();
         for (BackgroundLocation location : locations) {
-            JSONObject jsonLocation = location.toJSONObject();
-            jsonLocation.remove("locationId"); // do not expose internal locationId in this method
             jsonLocationsArray.put(location.toJSONObject());
         }
         return jsonLocationsArray;
@@ -536,8 +531,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
         JSONArray jsonLocationsArray = new JSONArray();
         Collection<BackgroundLocation> locations = dao.getValidLocations();
         for (BackgroundLocation location : locations) {
-            JSONObject jsonLocation = location.toJSONObject();
-            jsonLocationsArray.put(location.toJSONObject());
+            jsonLocationsArray.put(location.toJSONObjectWithId());
         }
         return jsonLocationsArray;
     }
@@ -591,7 +585,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
         for (int r : grantResults) {
             if (r == PackageManager.PERMISSION_DENIED) {
                 log.info("Permission Denied!");
-                actionStartCallbackContext.error(PERMISSION_DENIED_ERROR);
+                actionStartCallbackContext.error(JSONErrorFactory.getJSONError(PERMISSION_DENIED_ERROR_CODE, "Permission denied by user"));
                 actionStartCallbackContext = null;
                 return;
             }
@@ -599,6 +593,8 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
         switch (requestCode) {
             case START_REQ_CODE:
                 startAndBindBackgroundService();
+                actionStartCallbackContext.success();
+                actionStartCallbackContext = null;
                 break;
         }
     }

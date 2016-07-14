@@ -5,6 +5,8 @@ import java.util.Collection;
 public interface LocationDAO {
     public Collection<BackgroundLocation> getAllLocations();
     public Collection<BackgroundLocation> getValidLocations();
+    public Collection<BackgroundLocation> getLocationsForSync();
+    public Long getLocationsCount();
     public Long persistLocation(BackgroundLocation location);
     public Long persistLocationWithLimit(BackgroundLocation location, Integer maxRows);
     public void deleteLocation(Long locationId);

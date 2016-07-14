@@ -44,7 +44,8 @@
         <source-file src="android/plugin/src/main/java/com/marianhello/logging/LoggerManager.java" target-dir="src/com/marianhello/logging" />
         <source-file src="android/plugin/src/main/java/com/marianhello/logging/LogReader.java" target-dir="src/com/marianhello/logging" />
         <source-file src="android/plugin/src/main/java/com/marianhello/logging/SQLBuilder.java" target-dir="src/com/marianhello/bgloc/logging" />
-        <source-file src="android/plugin/src/main/java/com/marianhello/cordova/PermissionHelper.java" target-dir="src/com/marianhello/cordova"/>
+        <source-file src="android/plugin/src/main/java/com/marianhello/cordova/JSONErrorFactory.java" target-dir="src/com/marianhello/cordova" />
+        <source-file src="android/plugin/src/main/java/com/marianhello/cordova/PermissionHelper.java" target-dir="src/com/marianhello/cordova" />
 
         <config-file target="AndroidManifest.xml" parent="/manifest/application">
             <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />

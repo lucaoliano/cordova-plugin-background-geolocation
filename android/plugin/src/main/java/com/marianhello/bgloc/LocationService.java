@@ -35,6 +35,7 @@ import com.marianhello.logging.LoggerManager;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -224,10 +225,37 @@ public class LocationService extends Service {
         provider.stopRecording();
     }
 
+
+    /**
+     * Handle location from location location provider
+     *
+     * All locations updates are recorded in local db at all times.
+     * Also location is also send to all messenger clients.
+     *
+     * If option.url is defined, each location is also immediately posted.
+     * If post is successful, the location is deleted from local db.
+     * All failed to post locations are coalesced and send in some time later in one single batch.
+     * Batch sync takes place only when number of failed to post locations reaches syncTreshold.
+     *
+     * If only option.syncUrl is defined, locations are send only in single batch,
+     * when number of locations reaches syncTreshold.
+     *
+     * @param location
+     */
     public void handleLocation (BackgroundLocation location) {
-        // Boolean shouldPersists = mClients.size() == 0;
+
+        // for sake of simplicity we're intentionally one location behind
+        if (config.hasUrl() || config.hasSyncUrl()) {
+            if (dao.getLocationsCount() > config.getSyncThreshold()) {
+
+            }
+        }
 
         persistLocation(location);
+
+        if (config.hasUrl()) {
+            postLocation(location);
+        }
 
         for (int i = mClients.size() - 1; i >= 0; i--) {
             try {
@@ -241,12 +269,7 @@ public class LocationService extends Service {
                 // we are going through the list from back to front
                 // so this is safe to do inside the loop.
                 mClients.remove(i);
-                // shouldPersists = true;
             }
-        }
-
-        if (config.hasUrl()) {
-            postLocation(location);
         }
     }
 
@@ -296,18 +319,20 @@ public class LocationService extends Service {
             JSONArray jsonLocations = new JSONArray();
             for (BackgroundLocation location : locations) {
                 try {
-                    jsonLocations.put(location.toJSONObject());
+                    JSONObject jsonLocation = location.toJSONObject();
+                    jsonLocations.put(jsonLocation);
                 } catch (JSONException e) {
                     log.warn("Location to json failed: {}", location.toString());
                     return false;
                 }
             }
 
-            log.debug("Posting json to url: {} headers: {}", config.getUrl(), config.getHttpHeaders());
+            String url = config.getUrl();
+            log.debug("Posting json to url: {} headers: {}", url, config.getHttpHeaders());
             int response;
 
             try {
-                response = HttpPostService.postJSON(config.getUrl(), jsonLocations, config.getHttpHeaders());
+                response = HttpPostService.postJSON(url, jsonLocations, config.getHttpHeaders());
             } catch (Throwable e) {
                 log.warn("Error while posting locations: {}", e.getMessage());
                 response = 0;

@@ -122,18 +122,6 @@ public class SQLiteOpenHelper extends android.database.sqlite.SQLiteOpenHelper {
             String alterSql[] = {
                     "ALTER TABLE " + LocationEntry.TABLE_NAME +
                             " ADD COLUMN " + LocationEntry.COLUMN_NAME_VALID + INTEGER_TYPE,
-//                    "ALTER TABLE " + ConfigurationEntry.TABLE_NAME +
-//                            " ADD COLUMN " + ConfigurationEntry.COLUMN_NAME_STOP_ON_STILL + INTEGER_TYPE,
-//                    "ALTER TABLE " + ConfigurationEntry.TABLE_NAME +
-//                            " ADD COLUMN " + ConfigurationEntry.COLUMN_NAME_MAX_LOCATIONS + INTEGER_TYPE,
-//                    "ALTER TABLE " + ConfigurationEntry.TABLE_NAME +
-//                            " ADD COLUMN " + ConfigurationEntry.COLUMN_NAME_SYNC_URL + TEXT_TYPE,
-//                    "ALTER TABLE " + ConfigurationEntry.TABLE_NAME +
-//                            " ADD COLUMN " + ConfigurationEntry.COLUMN_NAME_SYNC_THRESHOLD + INTEGER_TYPE,
-//                    "UPDATE " + ConfigurationEntry.TABLE_NAME +
-//                            " SET " + ConfigurationEntry.COLUMN_NAME_MAX_LOCATIONS + "= 10000",
-//                    "UPDATE " + ConfigurationEntry.TABLE_NAME +
-//                            " SET " + ConfigurationEntry.COLUMN_NAME_SYNC_THRESHOLD + "= 100",
                     SQL_CREATE_LOCATION_TABLE_TIME_IDX,
                     SQL_DROP_CONFIG_TABLE,
                     SQL_CREATE_CONFIG_TABLE

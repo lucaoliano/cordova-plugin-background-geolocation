@@ -94,12 +94,8 @@ public class SQLiteConfigurationDAO implements ConfigurationDAO {
   }
 
   public boolean persistConfiguration(Config config) throws NullPointerException {
-    db.beginTransaction();
-    db.delete(ConfigurationEntry.TABLE_NAME, null, null);
-    long rowId = db.insert(ConfigurationEntry.TABLE_NAME, ConfigurationEntry.COLUMN_NAME_NULLABLE, getContentValues(config));
+    long rowId = db.replace(ConfigurationEntry.TABLE_NAME, ConfigurationEntry.COLUMN_NAME_NULLABLE, getContentValues(config));
     Log.d(TAG, "Configuration persisted with rowId = " + rowId);
-    db.setTransactionSuccessful();
-    db.endTransaction();
     if (rowId > -1) {
       return true;
     } else {
@@ -137,6 +133,7 @@ public class SQLiteConfigurationDAO implements ConfigurationDAO {
 
   private ContentValues getContentValues(Config config) throws NullPointerException {
     ContentValues values = new ContentValues();
+    values.put(ConfigurationEntry._ID, 1);
     values.put(ConfigurationEntry.COLUMN_NAME_RADIUS, config.getStationaryRadius());
     values.put(ConfigurationEntry.COLUMN_NAME_DISTANCE_FILTER, config.getDistanceFilter());
     values.put(ConfigurationEntry.COLUMN_NAME_DESIRED_ACCURACY, config.getDesiredAccuracy());

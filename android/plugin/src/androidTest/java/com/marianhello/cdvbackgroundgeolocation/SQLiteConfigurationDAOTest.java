@@ -1,12 +1,14 @@
 package com.marianhello.cdvbackgroundgeolocation;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 import android.test.suitebuilder.annotation.SmallTest;
 
 import com.marianhello.bgloc.Config;
+import com.marianhello.bgloc.data.sqlite.ConfigurationContract;
 import com.marianhello.bgloc.data.sqlite.SQLiteConfigurationDAO;
 import com.marianhello.bgloc.data.sqlite.SQLiteOpenHelper;
 
@@ -58,6 +60,10 @@ public class SQLiteConfigurationDAOTest {
 
         dao.persistConfiguration(config);
         dao.persistConfiguration(config); // try once more
+
+        Cursor cursor = db.query(ConfigurationContract.ConfigurationEntry.TABLE_NAME, null, null, null, null, null, null);
+        Assert.assertEquals(1, cursor.getCount());
+        cursor.close();
 
         try {
             Config storedConfig = dao.retrieveConfiguration();
