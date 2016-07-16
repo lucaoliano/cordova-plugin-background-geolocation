@@ -50,7 +50,6 @@ public class SQLiteLocationDAOTest {
         location.setProvider("test");
         location.setTime(1000);
         BackgroundLocation bgLocation = new BackgroundLocation(location);
-        bgLocation.setDebug(true);
 
         dao.persistLocation(bgLocation);
 
@@ -66,7 +65,6 @@ public class SQLiteLocationDAOTest {
         Assert.assertEquals(20, storedLocation.getSpeed(), 0);
         Assert.assertEquals("test", storedLocation.getProvider(), "test");
         Assert.assertEquals(1000, storedLocation.getTime(), 0);
-        Assert.assertEquals(Boolean.TRUE, storedLocation.getDebug());
     }
 
     @Test
@@ -130,7 +128,6 @@ public class SQLiteLocationDAOTest {
             location.setProvider("test");
             location.setTime(1000 + i);
             bgLocation = new BackgroundLocation(location);
-            bgLocation.setDebug(true);
             dao.persistLocation(bgLocation);
         }
 
@@ -147,7 +144,6 @@ public class SQLiteLocationDAOTest {
             Assert.assertEquals(20 + i, storedLocation.getSpeed(), 0);
             Assert.assertEquals("test", storedLocation.getProvider());
             Assert.assertEquals(1000 + i, storedLocation.getTime(), 0);
-            Assert.assertEquals(Boolean.TRUE, storedLocation.getDebug());
         }
     }
 

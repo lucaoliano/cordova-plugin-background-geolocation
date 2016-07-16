@@ -58,7 +58,6 @@ public class SQLiteOpenHelperTest {
         location.setProvider("test");
         location.setTime(1000);
         BackgroundLocation bgLocation = new BackgroundLocation(location);
-        bgLocation.setDebug(true);
 
         Config config = new Config();
         config.setActivitiesInterval(1000);
@@ -90,7 +89,6 @@ public class SQLiteOpenHelperTest {
         locationValues.put(LocationContract.LocationEntry.COLUMN_NAME_LONGITUDE, bgLocation.getLongitude());
         locationValues.put(LocationContract.LocationEntry.COLUMN_NAME_PROVIDER, bgLocation.getProvider());
         locationValues.put(LocationContract.LocationEntry.COLUMN_NAME_LOCATION_PROVIDER, bgLocation.getLocationProvider());
-        locationValues.put(LocationContract.LocationEntry.COLUMN_NAME_DEBUG, (bgLocation.getDebug() == true) ? 1 : 0);
 
         db10.insert(LocationContract.LocationEntry.TABLE_NAME, null, locationValues);
         cursor = db10.query(LocationContract.LocationEntry.TABLE_NAME, null, null, null, null, null, null);
@@ -160,7 +158,6 @@ public class SQLiteOpenHelperTest {
         Assert.assertEquals(20, storedLocation.getSpeed(), 0);
         Assert.assertEquals("test", storedLocation.getProvider(), "test");
         Assert.assertEquals(1000, storedLocation.getTime(), 0);
-        Assert.assertEquals(Boolean.TRUE, storedLocation.getDebug());
 
 
         // test configuration table upgrade

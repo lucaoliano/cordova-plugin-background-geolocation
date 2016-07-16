@@ -34,7 +34,6 @@ public class SQLiteOpenHelper extends android.database.sqlite.SQLiteOpenHelper {
         LocationEntry.COLUMN_NAME_LONGITUDE + REAL_TYPE + COMMA_SEP +
         LocationEntry.COLUMN_NAME_PROVIDER + TEXT_TYPE + COMMA_SEP +
         LocationEntry.COLUMN_NAME_LOCATION_PROVIDER + INTEGER_TYPE + COMMA_SEP +
-        LocationEntry.COLUMN_NAME_DEBUG + INTEGER_TYPE + COMMA_SEP +
         LocationEntry.COLUMN_NAME_VALID + INTEGER_TYPE +
         " )";
 

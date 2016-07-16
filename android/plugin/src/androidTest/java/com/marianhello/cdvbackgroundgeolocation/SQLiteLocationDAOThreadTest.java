@@ -59,7 +59,6 @@ public class SQLiteLocationDAOThreadTest {
                     location.setProvider("test");
                     location.setTime(1000 + i);
                     BackgroundLocation bgLocation = new BackgroundLocation(location);
-                    bgLocation.setDebug(true);
 
                     dao.persistLocation(bgLocation);
                 }
@@ -89,7 +88,6 @@ public class SQLiteLocationDAOThreadTest {
             Assert.assertEquals(20 + i, storedLocation.getSpeed(), 0);
             Assert.assertEquals("test", storedLocation.getProvider());
             Assert.assertEquals(1000 + i, storedLocation.getTime(), 0);
-            Assert.assertEquals(Boolean.TRUE, storedLocation.getDebug());
             i++;
         }
     }
