@@ -4,9 +4,6 @@ import ch.qos.logback.classic.db.names.ColumnName;
 import ch.qos.logback.classic.db.names.DBNameResolver;
 import ch.qos.logback.classic.db.names.TableName;
 
-/**
- * Created by finch on 10/07/16.
- */
 public class SQLBuilder {
 
     public static String buildSelectSQL(DBNameResolver dbNameResolver) {

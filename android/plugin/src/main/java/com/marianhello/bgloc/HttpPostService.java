@@ -22,6 +22,7 @@ public class HttpPostService {
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         // conn.setConnectTimeout(5000);
         // conn.setDoInput(true);
+//        conn.setRequestProperty("connection", "close");
         conn.setDoOutput(true);
         conn.setFixedLengthStreamingMode(jsonString.length());
         // conn.setChunkedStreamingMode(0);

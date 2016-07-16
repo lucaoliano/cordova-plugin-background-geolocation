@@ -15,9 +15,6 @@ import ch.qos.logback.classic.db.names.DefaultDBNameResolver;
 import ch.qos.logback.core.CoreConstants;
 import ch.qos.logback.core.android.CommonPathUtil;
 
-/**
- * Created by finch on 09/07/16.
- */
 public class LogReader {
 
     private DefaultDBNameResolver dbNameResolver;

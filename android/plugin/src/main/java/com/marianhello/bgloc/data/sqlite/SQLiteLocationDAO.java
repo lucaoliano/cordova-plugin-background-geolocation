@@ -1,19 +1,22 @@
 package com.marianhello.bgloc.data.sqlite;
 
-import java.util.ArrayList;
-import java.util.Collection;
-
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
-import android.location.Location;
 import android.util.Log;
 
-import com.marianhello.bgloc.data.LocationDAO;
 import com.marianhello.bgloc.data.BackgroundLocation;
+import com.marianhello.bgloc.data.LocationDAO;
 import com.marianhello.bgloc.data.sqlite.LocationContract.LocationEntry;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 public class SQLiteLocationDAO implements LocationDAO {
   private static final String TAG = SQLiteLocationDAO.class.getSimpleName();
@@ -57,8 +60,7 @@ public class SQLiteLocationDAO implements LocationDAO {
       LocationEntry.COLUMN_NAME_LATITUDE,
       LocationEntry.COLUMN_NAME_LONGITUDE,
       LocationEntry.COLUMN_NAME_PROVIDER,
-      LocationEntry.COLUMN_NAME_LOCATION_PROVIDER,
-      LocationEntry.COLUMN_NAME_DEBUG
+      LocationEntry.COLUMN_NAME_LOCATION_PROVIDER
     };
 
     String groupBy = null;
@@ -84,6 +86,51 @@ public class SQLiteLocationDAO implements LocationDAO {
         cursor.close();
       }
     }
+
+    return locations;
+  }
+
+  private JSONArray getLocationsAsJSONArray(String whereClause, String[] whereArgs) throws JSONException {
+    JSONArray locations = new JSONArray();
+
+    String[] columns = {
+            LocationEntry._ID,
+            LocationEntry.COLUMN_NAME_TIME,
+            LocationEntry.COLUMN_NAME_ACCURACY,
+            LocationEntry.COLUMN_NAME_SPEED,
+            LocationEntry.COLUMN_NAME_BEARING,
+            LocationEntry.COLUMN_NAME_ALTITUDE,
+            LocationEntry.COLUMN_NAME_LATITUDE,
+            LocationEntry.COLUMN_NAME_LONGITUDE,
+            LocationEntry.COLUMN_NAME_PROVIDER,
+            LocationEntry.COLUMN_NAME_LOCATION_PROVIDER
+    };
+
+    String groupBy = null;
+    String having = null;
+    String orderBy = LocationEntry.COLUMN_NAME_TIME + " ASC";
+    Cursor cursor = null;
+
+    try {
+      cursor = db.query(
+              LocationEntry.TABLE_NAME,  // The table to query
+              columns,                   // The columns to return
+              whereClause,               // The columns for the WHERE clause
+              whereArgs,                 // The values for the WHERE clause
+              groupBy,                   // don't group the rows
+              having,                    // don't filter by row groups
+              orderBy                    // The sort order
+      );
+      while (cursor.moveToNext()) {
+          JSONObject jsonLocation = hydrate(cursor).toJSONObject();
+          locations.put(jsonLocation);
+      }
+    } finally {
+      if (cursor != null) {
+        cursor.close();
+      }
+    }
+
     return locations;
   }
 
@@ -98,13 +145,14 @@ public class SQLiteLocationDAO implements LocationDAO {
     return getLocations(whereClause, whereArgs);
   }
 
-  public Collection<BackgroundLocation> getLocationsForSync() {
-    Collection<BackgroundLocation> locations = null;
+  public JSONArray getLocationsForSync() throws JSONException {
+    JSONArray locations = new JSONArray();
+
     String whereClause = LocationEntry.COLUMN_NAME_VALID + " = ?";
     String[] whereArgs = { "1" };
 
     db.beginTransactionNonExclusive();
-    locations = getLocations(whereClause, whereArgs);
+    locations = getLocationsAsJSONArray(whereClause, whereArgs);
 
     ContentValues values = new ContentValues();
     values.put(LocationEntry.COLUMN_NAME_VALID, 0);
@@ -115,8 +163,11 @@ public class SQLiteLocationDAO implements LocationDAO {
     return locations;
   }
 
-  public Long getLocationsCount() {
-    return DatabaseUtils.queryNumEntries(db, LocationEntry.TABLE_NAME);
+  public Long getValidLocationsCount() {
+    String whereClause = LocationEntry.COLUMN_NAME_VALID + " = ?";
+    String[] whereArgs = { "1" };
+
+    return DatabaseUtils.queryNumEntries(db, LocationEntry.TABLE_NAME, whereClause, whereArgs);
   }
 
   /**
@@ -127,7 +178,7 @@ public class SQLiteLocationDAO implements LocationDAO {
    */
   public Long persistLocation(BackgroundLocation location) {
     ContentValues values = getContentValues(location);
-    long rowId = db.insert(LocationEntry.TABLE_NAME, LocationEntry.COLUMN_NAME_NULLABLE, values);
+    long rowId = db.insertOrThrow(LocationEntry.TABLE_NAME, LocationEntry.COLUMN_NAME_NULLABLE, values);
     Log.d(TAG, "Location persisted with id=" + rowId);
     return rowId;
   }
@@ -152,7 +203,7 @@ public class SQLiteLocationDAO implements LocationDAO {
 
     if (rowCount < maxRows) {
       ContentValues values = getContentValues(location);
-      rowId = db.insert(LocationEntry.TABLE_NAME, LocationEntry.COLUMN_NAME_NULLABLE, values);
+      rowId = db.insertOrThrow(LocationEntry.TABLE_NAME, LocationEntry.COLUMN_NAME_NULLABLE, values);
       Log.d(TAG, "Location persisted with id=" + rowId);
 
       return rowId;
@@ -184,7 +235,6 @@ public class SQLiteLocationDAO implements LocationDAO {
             .append(LocationEntry.COLUMN_NAME_TIME).append("= ?,")
             .append(LocationEntry.COLUMN_NAME_PROVIDER).append("= ?,")
             .append(LocationEntry.COLUMN_NAME_LOCATION_PROVIDER).append("= ?,")
-            .append(LocationEntry.COLUMN_NAME_DEBUG).append("= ?,")
             .append(LocationEntry.COLUMN_NAME_VALID).append("= 1")
             .append(" WHERE ").append(LocationEntry.COLUMN_NAME_TIME)
             .append("= (SELECT min(").append(LocationEntry.COLUMN_NAME_TIME).append(") FROM ")
@@ -199,8 +249,7 @@ public class SQLiteLocationDAO implements LocationDAO {
             location.getSpeed(),
             location.getTime(),
             location.getProvider(),
-            location.getLocationProvider(),
-            location.getDebug() ? "1" : "0"
+            location.getLocationProvider()
     });
 
     rowId = getLastInsertRowId(db);
@@ -251,7 +300,6 @@ public class SQLiteLocationDAO implements LocationDAO {
     l.setLatitude(c.getDouble(c.getColumnIndex(LocationEntry.COLUMN_NAME_LATITUDE)));
     l.setLongitude(c.getDouble(c.getColumnIndex(LocationEntry.COLUMN_NAME_LONGITUDE)));
     l.setLocationProvider(c.getInt(c.getColumnIndex(LocationEntry.COLUMN_NAME_LOCATION_PROVIDER)));
-    l.setDebug( (c.getInt(c.getColumnIndex(LocationEntry.COLUMN_NAME_DEBUG)) == 1) ? true : false);
 
     return l;
   }
@@ -267,7 +315,6 @@ public class SQLiteLocationDAO implements LocationDAO {
     values.put(LocationEntry.COLUMN_NAME_LONGITUDE, location.getLongitude());
     values.put(LocationEntry.COLUMN_NAME_PROVIDER, location.getProvider());
     values.put(LocationEntry.COLUMN_NAME_LOCATION_PROVIDER, location.getLocationProvider());
-    values.put(LocationEntry.COLUMN_NAME_DEBUG, (location.getDebug() == true) ? 1 : 0);
     values.put(LocationEntry.COLUMN_NAME_VALID, 1);
 
     return values;

@@ -40,12 +40,25 @@
         <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/data/sqlite/SQLiteConfigurationDAO.java" target-dir="src/com/marianhello/bgloc/data/sqlite" />
         <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/data/sqlite/SQLiteLocationDAO.java" target-dir="src/com/marianhello/bgloc/data/sqlite" />
         <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/data/sqlite/SQLiteOpenHelper.java" target-dir="src/com/marianhello/bgloc/data/sqlite" />
+        <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/sync/Authenticator.java" target-dir="src/com/marianhello/bgloc/sync" />
+        <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/sync/AuthenticatorService.java" target-dir="src/com/marianhello/bgloc/sync" />
+        <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/sync/LocationProvider.java" target-dir="src/com/marianhello/bgloc/sync" />
+        <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/sync/SyncAdapter.java" target-dir="src/com/marianhello/bgloc/sync" />
+        <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/sync/SyncService.java" target-dir="src/com/marianhello/bgloc/sync" />
         <source-file src="android/plugin/src/main/java/com/marianhello/logging/LogEntry.java" target-dir="src/com/marianhello/logging" />
         <source-file src="android/plugin/src/main/java/com/marianhello/logging/LoggerManager.java" target-dir="src/com/marianhello/logging" />
         <source-file src="android/plugin/src/main/java/com/marianhello/logging/LogReader.java" target-dir="src/com/marianhello/logging" />
         <source-file src="android/plugin/src/main/java/com/marianhello/logging/SQLBuilder.java" target-dir="src/com/marianhello/bgloc/logging" />
         <source-file src="android/plugin/src/main/java/com/marianhello/cordova/JSONErrorFactory.java" target-dir="src/com/marianhello/cordova" />
         <source-file src="android/plugin/src/main/java/com/marianhello/cordova/PermissionHelper.java" target-dir="src/com/marianhello/cordova" />
+        <resource-file src="android/plugin/src/main/res/xml/authenticator.xml" target="res/xml/authenticator.xml" />
+        <resource-file src="android/plugin/src/main/res/xml/syncadapter.xml" target="res/xml/syncadapter.xml" />
+        <resource-file src="android/plugin/src/main/res/xml/authenticator.xml" target="res/xml/authenticator.xml" />
+        <resource-file src="android/plugin/src/main/res/mipmap-mdpi/ic_launcher.png" target="res/drawable-mdpi/ic_launcher.png" />
+        <resource-file src="android/plugin/src/main/res/mipmap-hdpi/ic_launcher.png" target="res/drawable-hdpi/ic_launcher.png" />
+        <resource-file src="android/plugin/src/main/res/mipmap-xhdpi/ic_launcher.png" target="res/drawable-xhdpi/ic_launcher.png" />
+        <resource-file src="android/plugin/src/main/res/mipmap-xxhdpi/ic_launcher.png" target="res/drawable-xxhdpi/ic_launcher.png" />
+        <resource-file src="android/plugin/src/main/res/mipmap-xxxhdpi/ic_launcher.png" target="res/drawable-xxxhdpi/ic_launcher.png" />
 
         <config-file target="AndroidManifest.xml" parent="/manifest/application">
             <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
@@ -62,6 +75,30 @@
                 android:finishOnTaskLaunch="true"
                 />
             <service
+                android:name="com.marianhello.bgloc.sync.SyncService"
+                android:exported="true"
+                android:process=":sync">
+                <intent-filter>
+                    <action android:name="android.content.SyncAdapter"/>
+                </intent-filter>
+                <meta-data android:name="android.content.SyncAdapter"
+                    android:resource="@xml/syncadapter" />
+            </service>
+            <service
+                android:name="com.marianhello.bgloc.sync.AuthenticatorService">
+                <intent-filter>
+                    <action android:name="android.accounts.AccountAuthenticator"/>
+                </intent-filter>
+                <meta-data
+                    android:name="android.accounts.AccountAuthenticator"
+                    android:resource="@xml/authenticator" />
+            </service>
+            <provider
+                android:name="com.marianhello.bgloc.sync.LocationProvider"
+                android:authorities="com.marianhello.bgloc.sync"
+                android:exported="false"
+                android:syncable="true"/>
+            <service
                 android:enabled="true"
                 android:exported="false"
                 android:name="com.marianhello.bgloc.LocationService"
@@ -77,14 +114,18 @@
         </config-file>
 
         <config-file target="AndroidManifest.xml" parent="/manifest">
-            <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-            <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION"/>
-            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-            <uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS"/>
-            <uses-permission android:name="android.permission.INTERNET"/>
-            <uses-permission android:name="android.permission.WAKE_LOCK"/>
+            <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
+            <uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
+            <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />
+            <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+            <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+            <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" />
+            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+            <uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS" />
+            <uses-permission android:name="android.permission.INTERNET" />
+            <uses-permission android:name="android.permission.WAKE_LOCK" />
         </config-file>
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="BackgroundGeolocation">

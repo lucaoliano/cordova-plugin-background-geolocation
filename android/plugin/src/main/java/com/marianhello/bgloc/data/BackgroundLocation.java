@@ -11,7 +11,6 @@ public class BackgroundLocation implements Parcelable {
     private Long locationId = null; //Long.valueOf(-1);
     private Integer locationProvider;
     private Location location;
-    private Boolean debug = false;
 
     public BackgroundLocation(Integer locationProvider, Location location) {
         this.location = location;
@@ -31,7 +30,6 @@ public class BackgroundLocation implements Parcelable {
         setLocationProvider(in.readInt());
         setLocation(Location.CREATOR.createFromParcel(in));
 //        setLocation((Location) in.readParcelable(Location.class.getClassLoader()));
-        setDebug((Boolean) in.readValue(null));
     }
 
     @Override
@@ -44,7 +42,6 @@ public class BackgroundLocation implements Parcelable {
         dest.writeLong(getLocationId());
         dest.writeInt(getLocationProvider());
         location.writeToParcel(dest, flags);
-        dest.writeValue(getDebug());
     }
 
     public static final Parcelable.Creator<BackgroundLocation> CREATOR
@@ -125,14 +122,6 @@ public class BackgroundLocation implements Parcelable {
         location.setAltitude(altitude);
     }
 
-    public Boolean getDebug() {
-        return debug;
-    }
-
-    public void setDebug(Boolean debug) {
-        this.debug = debug;
-    }
-
     public String getProvider() {
         return location.getProvider();
     }
@@ -160,17 +149,16 @@ public class BackgroundLocation implements Parcelable {
     @Override
     public String toString () {
         return new StringBuffer()
-            .append("Location[id=").append(getLocationId())
+            .append("BGLocation[").append(getProvider())
+            .append(" ").append(getLatitude())
+            .append(" ,").append(getLongitude())
+            .append(" id=").append(getLocationId())
             .append(" time=").append(getTime())
-            .append(" lat=").append(getLatitude())
-            .append(" lon=").append(getLongitude())
             .append(" acy=").append(getAccuracy())
             .append(" speed=").append(getSpeed())
             .append(" alt=").append(getAltitude())
             .append(" bear=").append(getBearing())
-            .append(" prov=").append(getProvider())
             .append(" locprov=").append(getLocationProvider())
-            .append(" debug=").append(getDebug())
             .append("]")
             .toString();
     }
@@ -186,7 +174,6 @@ public class BackgroundLocation implements Parcelable {
         json.put("bearing", getBearing());
         json.put("provider", getProvider());
         json.put("locationProvider", getLocationProvider());
-        json.put("debug", getDebug());
 
         return json;
   	}

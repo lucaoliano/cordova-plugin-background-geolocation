@@ -12,7 +12,7 @@ package com.marianhello.bgloc;
 import android.location.Location;
 
 /**
- * LocationProvider
+ * LocationContentProvider
  */
 public interface LocationProvider {
 

@@ -28,7 +28,7 @@ public class BootCompletedReceiver extends BroadcastReceiver {
 
     @Override
      public void onReceive(Context context, Intent intent) {
-        Log.i(TAG, "Received boot completed");
+        Log.d(TAG, "Received boot completed");
         ConfigurationDAO dao = DAOFactory.createConfigurationDAO(context);
         Config config = null;
 
@@ -40,9 +40,10 @@ public class BootCompletedReceiver extends BroadcastReceiver {
 
         if (config == null) { return; }
 
-        Log.i(TAG, "Config: " + config.toString());
+        Log.d(TAG, "Boot completed " + config.toString());
 
         if (config.getStartOnBoot()) {
+            Log.i(TAG, "Starting service after boot");
             Intent locationServiceIntent = new Intent(context, LocationService.class);
             locationServiceIntent.addFlags(Intent.FLAG_FROM_BACKGROUND);
             locationServiceIntent.putExtra("config", config);

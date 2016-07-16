@@ -12,6 +12,8 @@ Differences to original version:
 package com.tenforwardconsulting.cordova;
 
 import android.Manifest;
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -57,6 +59,8 @@ import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import ch.qos.logback.core.helpers.ThrowableToStringArray;
+
 public class BackgroundGeolocationPlugin extends CordovaPlugin {
     private static final String TAG = BackgroundGeolocationPlugin.class.getSimpleName();
 
@@ -85,7 +89,6 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
     private Boolean mIsBound = false;
     private Boolean isServiceRunning = false;
 
-    private LocationDAO dao;
     private Config config;
     private CallbackContext callbackContext;
     private CallbackContext actionStartCallbackContext;
@@ -103,11 +106,27 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
             switch (msg.what) {
                 case LocationService.MSG_LOCATION_UPDATE:
                     try {
-                        log.debug("Sending location update");
+                        log.debug("Sending location update to webview");
                         Bundle bundle = msg.getData();
                         bundle.setClassLoader(LocationService.class.getClassLoader());
                         JSONObject location = ((BackgroundLocation) bundle.getParcelable("location")).toJSONObject();
                         PluginResult result = new PluginResult(PluginResult.Status.OK, location);
+                        result.setKeepCallback(true);
+                        callbackContext.sendPluginResult(result);
+                    } catch (JSONException e) {
+                        log.warn("Error converting message to json");
+                        PluginResult result = new PluginResult(PluginResult.Status.JSON_EXCEPTION);
+                        result.setKeepCallback(true);
+                        callbackContext.sendPluginResult(result);
+                    }
+                    break;
+                case LocationService.MSG_ERROR:
+                    try {
+                        log.debug("Sending error to webview");
+                        Bundle bundle = msg.getData();
+                        bundle.setClassLoader(LocationService.class.getClassLoader());
+                        JSONObject error = new JSONObject(bundle.getString("error"));
+                        PluginResult result = new PluginResult(PluginResult.Status.ERROR, error);
                         result.setKeepCallback(true);
                         callbackContext.sendPluginResult(result);
                     } catch (JSONException e) {
@@ -188,7 +207,6 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
 
         super.pluginInitialize();
         executorService =  Executors.newSingleThreadExecutor();
-        dao = DAOFactory.createLocationDAO(getContext());
     }
 
     public boolean execute(String action, final JSONArray data, final CallbackContext callbackContext) {
@@ -520,6 +538,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
 
     public JSONArray getAllLocations() throws JSONException {
         JSONArray jsonLocationsArray = new JSONArray();
+        LocationDAO dao = DAOFactory.createLocationDAO(getContext());
         Collection<BackgroundLocation> locations = dao.getAllLocations();
         for (BackgroundLocation location : locations) {
             jsonLocationsArray.put(location.toJSONObject());
@@ -529,6 +548,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
 
     public JSONArray getValidLocations() throws JSONException {
         JSONArray jsonLocationsArray = new JSONArray();
+        LocationDAO dao = DAOFactory.createLocationDAO(getContext());
         Collection<BackgroundLocation> locations = dao.getValidLocations();
         for (BackgroundLocation location : locations) {
             jsonLocationsArray.put(location.toJSONObjectWithId());
@@ -537,10 +557,12 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
     }
 
     public void deleteLocation(Long locationId) {
+        LocationDAO dao = DAOFactory.createLocationDAO(getContext());
         dao.deleteLocation(locationId);
     }
 
     public void deleteAllLocations() {
+        LocationDAO dao = DAOFactory.createLocationDAO(getContext());
         dao.deleteAllLocations();
     }
 
@@ -552,8 +574,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
     }
 
     public JSONObject retrieveConfiguration() throws JSONException {
-        Context context = this.cordova.getActivity().getApplicationContext();
-        ConfigurationDAO dao = DAOFactory.createConfigurationDAO(context);
+        ConfigurationDAO dao = DAOFactory.createConfigurationDAO(getContext());
         Config config = dao.retrieveConfiguration();
         if (config != null) {
             return config.toJSONObject();

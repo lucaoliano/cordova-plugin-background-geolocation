@@ -11,9 +11,6 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 
-/**
- * Created by finch on 08/07/16.
- */
 public class LoggerManager {
 
     public static final String SQLITE_APPENDER_NAME = "sqlite";

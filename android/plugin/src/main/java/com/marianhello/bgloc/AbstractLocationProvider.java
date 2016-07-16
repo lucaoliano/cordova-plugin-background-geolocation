@@ -17,6 +17,9 @@ import android.media.AudioManager;
 import android.media.ToneGenerator;
 
 import com.marianhello.bgloc.data.BackgroundLocation;
+import com.marianhello.cordova.JSONErrorFactory;
+
+import org.json.JSONObject;
 
 /**
  * AbstractLocationProvider
@@ -24,16 +27,27 @@ import com.marianhello.bgloc.data.BackgroundLocation;
 public abstract class AbstractLocationProvider implements LocationProvider {
     private static final String TAG = "AbstractLocationProvider";
 
+    private static final int PERMISSION_DENIED_ERROR_CODE = 2;
+
+    protected static enum Tone {
+        BEEP,
+        BEEP_BEEP_BEEP,
+        LONG_BEEP,
+        DOODLY_DOO,
+        CHIRP_CHIRP_CHIRP,
+        DIALTONE
+    };
+
     protected Integer PROVIDER_ID;
-    protected LocationService context;
+    protected LocationService locationService;
     protected Location lastLocation;
     protected Config config;
 
     protected ToneGenerator toneGenerator;
 
-    protected AbstractLocationProvider(LocationService context) {
-        this.context = context;
-        this.config = context.getConfig();
+    protected AbstractLocationProvider(LocationService locationService) {
+        this.locationService = locationService;
+        this.config = locationService.getConfig();
     }
 
     public void onCreate() {
@@ -45,38 +59,51 @@ public abstract class AbstractLocationProvider implements LocationProvider {
     }
 
     public Intent registerReceiver (BroadcastReceiver receiver, IntentFilter filter) {
-        return context.registerReceiver(receiver, filter);
+        return locationService.registerReceiver(receiver, filter);
     }
 
     public void unregisterReceiver (BroadcastReceiver receiver) {
-        context.unregisterReceiver(receiver);
+        locationService.unregisterReceiver(receiver);
     }
 
     public void handleLocation (Location location) {
-        context.handleLocation(new BackgroundLocation(PROVIDER_ID, location));
+        locationService.handleLocation(new BackgroundLocation(PROVIDER_ID, location));
+    }
+
+    public void handleSecurityException (SecurityException e) {
+        JSONObject error = JSONErrorFactory.getJSONError(PERMISSION_DENIED_ERROR_CODE, e.getMessage());
+        locationService.handleError(error);
     }
 
     /**
      * Plays debug sound
      * @param name
      */
-    protected void startTone(String name) {
+    protected void startTone(Tone name) {
         int tone = 0;
         int duration = 1000;
 
-        if (name.equals("beep")) {
-            tone = ToneGenerator.TONE_PROP_BEEP;
-        } else if (name.equals("beep_beep_beep")) {
-            tone = ToneGenerator.TONE_CDMA_CONFIRM;
-        } else if (name.equals("long_beep")) {
-            tone = ToneGenerator.TONE_CDMA_ABBR_ALERT;
-        } else if (name.equals("doodly_doo")) {
-            tone = ToneGenerator.TONE_CDMA_ALERT_NETWORK_LITE;
-        } else if (name.equals("chirp_chirp_chirp")) {
-            tone = ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD;
-        } else if (name.equals("dialtone")) {
-            tone = ToneGenerator.TONE_SUP_RINGTONE;
+        switch (name) {
+            case BEEP:
+                tone = ToneGenerator.TONE_PROP_BEEP;
+                break;
+            case BEEP_BEEP_BEEP:
+                tone = ToneGenerator.TONE_CDMA_CONFIRM;
+                break;
+            case LONG_BEEP:
+                tone = ToneGenerator.TONE_CDMA_ABBR_ALERT;
+                break;
+            case DOODLY_DOO:
+                tone = ToneGenerator.TONE_CDMA_ALERT_NETWORK_LITE;
+                break;
+            case CHIRP_CHIRP_CHIRP:
+                tone = ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD;
+                break;
+            case DIALTONE:
+                tone = ToneGenerator.TONE_SUP_RINGTONE;
+                break;
         }
+
         toneGenerator.startTone(tone, duration);
     }
 }

@@ -41,8 +41,8 @@ public class ActivityRecognitionLocationProvider extends AbstractLocationProvide
 
     private org.slf4j.Logger log;
 
-    public ActivityRecognitionLocationProvider(LocationService context) {
-        super(context);
+    public ActivityRecognitionLocationProvider(LocationService locationService) {
+        super(locationService);
         PROVIDER_ID = 1;
     }
 
@@ -53,25 +53,25 @@ public class ActivityRecognitionLocationProvider extends AbstractLocationProvide
         super.onCreate();
 
 
-        PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        PowerManager pm = (PowerManager) locationService.getSystemService(Context.POWER_SERVICE);
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
         wakeLock.acquire();
 
         Intent detectedActivitiesIntent = new Intent(DETECTED_ACTIVITY_UPDATE);
-        detectedActivitiesPI = PendingIntent.getBroadcast(context, 9002, detectedActivitiesIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        detectedActivitiesPI = PendingIntent.getBroadcast(locationService, 9002, detectedActivitiesIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         registerReceiver(detectedActivitiesReceiver, new IntentFilter(DETECTED_ACTIVITY_UPDATE));
     }
 
     @Override
     public void onLocationChanged(Location location) {
-        log.debug("onLocationChanged: " + location.toString());
+        log.debug("Location change: {}", location.toString());
 
         if (lastActivity.getType() == DetectedActivity.STILL) {
             stopTracking();
         }
 
         if (config.isDebugging()) {
-            Toast.makeText(context, "acy:" + location.getAccuracy() + ",v:" + location.getSpeed() + ",df:" + config.getDistanceFilter(), Toast.LENGTH_LONG).show();
+            Toast.makeText(locationService, "acy:" + location.getAccuracy() + ",v:" + location.getSpeed() + ",df:" + config.getDistanceFilter(), Toast.LENGTH_LONG).show();
         }
 
         // if (lastLocation != null && location.distanceTo(lastLocation) < config.getDistanceFilter()) {
@@ -79,7 +79,7 @@ public class ActivityRecognitionLocationProvider extends AbstractLocationProvide
         // }
 
         if (config.isDebugging()) {
-            startTone("beep");
+            startTone(Tone.BEEP);
         }
 
         lastLocation = location;
@@ -108,9 +108,14 @@ public class ActivityRecognitionLocationProvider extends AbstractLocationProvide
                 .setFastestInterval(config.getFastestInterval())
                 .setInterval(config.getInterval());
                 // .setSmallestDisplacement(config.getStationaryRadius());
-        LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, this);
-        isTracking = true;
-        log.debug("Start tracking with priority={} fastestInterval={} interval={} activitiesInterval={} stopOnStillActivity={}", priority, config.getFastestInterval(), config.getInterval(), config.getActivitiesInterval(), config.getStopOnStillActivity());
+        try {
+            LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, this);
+            isTracking = true;
+            log.debug("Start tracking with priority={} fastestInterval={} interval={} activitiesInterval={} stopOnStillActivity={}", priority, config.getFastestInterval(), config.getInterval(), config.getActivitiesInterval(), config.getStopOnStillActivity());
+        } catch (SecurityException e) {
+            log.error("Security exception: {}", e.getMessage());
+            this.handleSecurityException(e);
+        }
     }
 
     public void stopTracking() {
@@ -122,7 +127,7 @@ public class ActivityRecognitionLocationProvider extends AbstractLocationProvide
 
     private void connectToPlayAPI() {
         log.debug("Connecting to Google Play Services");
-        googleApiClient =  new GoogleApiClient.Builder(context)
+        googleApiClient =  new GoogleApiClient.Builder(locationService)
                 .addApi(LocationServices.API)
                 .addApi(ActivityRecognition.API)
                 .addConnectionCallbacks(this)

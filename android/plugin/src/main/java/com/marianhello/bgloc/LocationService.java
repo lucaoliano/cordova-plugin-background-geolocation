@@ -9,12 +9,16 @@ This is a new class
 
 package com.marianhello.bgloc;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.SQLException;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.AsyncTask;
@@ -26,9 +30,9 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.support.v4.app.NotificationCompat;
-import android.util.Log;
 
 import com.marianhello.bgloc.data.BackgroundLocation;
+import com.marianhello.bgloc.data.ConfigurationDAO;
 import com.marianhello.bgloc.data.DAOFactory;
 import com.marianhello.bgloc.data.LocationDAO;
 import com.marianhello.logging.LoggerManager;
@@ -42,6 +46,15 @@ import java.util.Random;
 
 public class LocationService extends Service {
     private static final String TAG = LocationService.class.getSimpleName();
+
+    // The authority for the sync adapter's content provider
+    public static final String AUTHORITY = "com.marianhello.bgloc.sync";
+    // An account type, in the form of a domain name
+    public static final String ACCOUNT_TYPE = "marianhello.com";
+    // The account name
+    public static final String ACCOUNT = "dummyaccount";
+    // Instance fields
+    Account account;
 
     private LocationDAO dao;
     private Config config;
@@ -67,10 +80,17 @@ public class LocationService extends Service {
     public static final int MSG_UNREGISTER_CLIENT = 2;
 
     /**
-     * Command ent by the service to
+     * Command sent by the service to
      * any registered clients with the new position.
      */
     public static final int MSG_LOCATION_UPDATE = 3;
+
+
+    /**
+     * Command sent by the service to
+     * any registered clients with error.
+     */
+    public static final int MSG_ERROR = 4;
 
     /**
      * Handler of incoming messages from clients.
@@ -112,6 +132,7 @@ public class LocationService extends Service {
 
         super.onCreate();
         dao = (DAOFactory.createLocationDAO(this));
+        account = CreateSyncAccount(this);
     }
 
     @Override
@@ -140,16 +161,27 @@ public class LocationService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        log.info("Received start startId:{} intent:{}", startId, intent);
-
-        if (intent.hasExtra("config")) {
-            config = (Config) intent.getParcelableExtra("config");
-        } else {
-            config = new Config();
-        }
+        log.info("Received start startId: {} intent: {}", startId, intent);
 
         if (provider != null) {
             provider.onDestroy();
+        }
+
+        if (intent == null) {
+            //service has been probably restarted so we need to load config from db
+            ConfigurationDAO dao = DAOFactory.createConfigurationDAO(this);
+            try {
+                config = dao.retrieveConfiguration();
+            } catch (JSONException e) {
+                log.error("Config exception: {}", e.getMessage());
+                config = new Config(); //using default config
+            }
+        } else {
+            if (intent.hasExtra("config")) {
+                config = (Config) intent.getParcelableExtra("config");
+            } else {
+                config = new Config(); //using default config
+            }
         }
 
         log.debug("Will start service with: {}", config.toString());
@@ -184,7 +216,7 @@ public class LocationService extends Service {
         provider.startRecording();
 
         //We want this service to continue running until it is explicitly stopped
-        return START_REDELIVER_INTENT;
+        return START_STICKY;
     }
 
     protected Integer getPluginResource(String resourceName) {
@@ -246,8 +278,8 @@ public class LocationService extends Service {
 
         // for sake of simplicity we're intentionally one location behind
         if (config.hasUrl() || config.hasSyncUrl()) {
-            if (dao.getLocationsCount() > config.getSyncThreshold()) {
-
+            if (dao.getValidLocationsCount() >= config.getSyncThreshold()) {
+                syncLocations();
             }
         }
 
@@ -273,14 +305,31 @@ public class LocationService extends Service {
         }
     }
 
-    // method has side effects
+    public void handleError(JSONObject error) {
+        for (int i = mClients.size() - 1; i >= 0; i--) {
+            try {
+                Bundle bundle = new Bundle();
+                bundle.putString("error", error.toString());
+                Message msg = Message.obtain(null, MSG_ERROR);
+                msg.setData(bundle);
+                mClients.get(i).send(msg);
+            } catch (RemoteException e) {
+                // The client is dead.  Remove it from the list;
+                // we are going through the list from back to front
+                // so this is safe to do inside the loop.
+                mClients.remove(i);
+            }
+        }
+    }
+
+    // method will mutate location
     public void persistLocation (BackgroundLocation location) {
-        Long locationId = dao.persistLocationWithLimit(location, config.getMaxLocations());
-        if (locationId > -1) {
+        try {
+            Long locationId = dao.persistLocationWithLimit(location, config.getMaxLocations());
             location.setLocationId(locationId);
             log.debug("Persisted location: {}", location.toString());
-        } else {
-            log.error("Failed to persist location: {}", location.toString());
+        } catch (SQLException e) {
+            log.error("Failed to persist location: {} error: {}", location.toString(), e.getMessage());
         }
     }
 
@@ -292,6 +341,19 @@ public class LocationService extends Service {
         else {
             task.execute(location);
         }
+    }
+
+    public void syncLocations() {
+        // Pass the settings flags by inserting them in a bundle
+        Bundle settingsBundle = new Bundle();
+        settingsBundle.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
+        settingsBundle.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, false);
+        settingsBundle.putBoolean(ContentResolver.SYNC_EXTRAS_UPLOAD, true);
+        /*
+         * Request the sync for the default account, authority, and
+         * manual sync settings
+         */
+        ContentResolver.requestSync(account, AUTHORITY, settingsBundle);
     }
 
     /**
@@ -309,6 +371,36 @@ public class LocationService extends Service {
 
     public void setConfig(Config config) {
         this.config = config;
+    }
+
+    /**
+     * Create a new dummy account for the sync adapter
+     *
+     * @param context The application context
+     */
+    public static Account CreateSyncAccount(Context context) {
+        // Create the account type and default account
+        Account newAccount = new Account(ACCOUNT, ACCOUNT_TYPE);
+        // Get an instance of the Android account manager
+        AccountManager accountManager =  (AccountManager) context.getSystemService(Context.ACCOUNT_SERVICE);
+        /*
+         * Add the account and account type, no password or user data
+         * If successful, return the Account object, otherwise report an error.
+         */
+        if (accountManager.addAccountExplicitly(newAccount, null, null)) {
+            /*
+             * If you don't set android:syncable="true" in
+             * in your <provider> element in the manifest,
+             * then call context.setIsSyncable(account, AUTHORITY, 1)
+             * here.
+             */
+        } else {
+            /*
+             * The account exists or some other error occurred. Log this, report it,
+             * or handle it internally.
+             */
+        }
+        return newAccount;
     }
 
     private class PostLocationTask extends AsyncTask<BackgroundLocation, Integer, Boolean> {
@@ -329,21 +421,24 @@ public class LocationService extends Service {
 
             String url = config.getUrl();
             log.debug("Posting json to url: {} headers: {}", url, config.getHttpHeaders());
-            int response;
+            int responseCode;
 
             try {
-                response = HttpPostService.postJSON(url, jsonLocations, config.getHttpHeaders());
+                responseCode = HttpPostService.postJSON(url, jsonLocations, config.getHttpHeaders());
             } catch (Throwable e) {
                 log.warn("Error while posting locations: {}", e.getMessage());
-                response = 0;
+                return false;
             }
 
-            if (response == 200) {
-                for (BackgroundLocation location : locations) {
-                    Long locationId = location.getLocationId();
-                    if (locationId != null) {
-                        dao.deleteLocation(locationId);
-                    }
+            if (responseCode != 200) {
+                log.warn("Server error while posting locations responseCode: {}", responseCode);
+                return false;
+            }
+
+            for (BackgroundLocation location : locations) {
+                Long locationId = location.getLocationId();
+                if (locationId != null) {
+                    dao.deleteLocation(locationId);
                 }
             }
 

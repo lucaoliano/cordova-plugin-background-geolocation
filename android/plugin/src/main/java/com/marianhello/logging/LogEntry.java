@@ -3,9 +3,6 @@ package com.marianhello.logging;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-/**
- * Created by finch on 10/07/16.
- */
 public class LogEntry {
     private Integer context;
     private String level;
