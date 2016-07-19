@@ -20,6 +20,8 @@
     <!-- android -->
     <platform name="android">
         <framework src="android/logtofile.gradle" custom="true" type="gradleReference"/>
+        <framework src="com.google.android.gms:play-services-location:+" />
+        <framework src="com.android.support:support-v4:+" />
         <source-file src="android/plugin/src/main/java/com/tenforwardconsulting/cordova/BackgroundGeolocationPlugin.java" target-dir="src/com/tenforwardconsulting/cordova"/>
         <source-file src="android/plugin/src/main/java/com/tenforwardconsulting/bgloc/DistanceFilterLocationProvider.java" target-dir="src/com/tenforwardconsulting/bgloc"/>
         <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/AbstractLocationProvider.java" target-dir="src/com/marianhello/bgloc"/>
@@ -42,6 +44,7 @@
         <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/data/sqlite/SQLiteOpenHelper.java" target-dir="src/com/marianhello/bgloc/data/sqlite" />
         <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/sync/Authenticator.java" target-dir="src/com/marianhello/bgloc/sync" />
         <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/sync/AuthenticatorService.java" target-dir="src/com/marianhello/bgloc/sync" />
+        <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/sync/BatchStore.java" target-dir="src/com/marianhello/bgloc/sync" />
         <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/sync/LocationProvider.java" target-dir="src/com/marianhello/bgloc/sync" />
         <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/sync/SyncAdapter.java" target-dir="src/com/marianhello/bgloc/sync" />
         <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/sync/SyncService.java" target-dir="src/com/marianhello/bgloc/sync" />
@@ -54,11 +57,11 @@
         <resource-file src="android/plugin/src/main/res/xml/authenticator.xml" target="res/xml/authenticator.xml" />
         <resource-file src="android/plugin/src/main/res/xml/syncadapter.xml" target="res/xml/syncadapter.xml" />
         <resource-file src="android/plugin/src/main/res/xml/authenticator.xml" target="res/xml/authenticator.xml" />
-        <resource-file src="android/plugin/src/main/res/mipmap-mdpi/ic_launcher.png" target="res/drawable-mdpi/ic_launcher.png" />
-        <resource-file src="android/plugin/src/main/res/mipmap-hdpi/ic_launcher.png" target="res/drawable-hdpi/ic_launcher.png" />
-        <resource-file src="android/plugin/src/main/res/mipmap-xhdpi/ic_launcher.png" target="res/drawable-xhdpi/ic_launcher.png" />
-        <resource-file src="android/plugin/src/main/res/mipmap-xxhdpi/ic_launcher.png" target="res/drawable-xxhdpi/ic_launcher.png" />
-        <resource-file src="android/plugin/src/main/res/mipmap-xxxhdpi/ic_launcher.png" target="res/drawable-xxxhdpi/ic_launcher.png" />
+        <resource-file src="android/plugin/src/main/res/mipmap-mdpi/ic_launcher.png" target="res/mipmap-mdpi/ic_launcher.png" />
+        <resource-file src="android/plugin/src/main/res/mipmap-hdpi/ic_launcher.png" target="res/mipmap-hdpi/ic_launcher.png" />
+        <resource-file src="android/plugin/src/main/res/mipmap-xhdpi/ic_launcher.png" target="res/mipmap-xhdpi/ic_launcher.png" />
+        <resource-file src="android/plugin/src/main/res/mipmap-xxhdpi/ic_launcher.png" target="res/mipmap-xxhdpi/ic_launcher.png" />
+        <resource-file src="android/plugin/src/main/res/mipmap-xxxhdpi/ic_launcher.png" target="res/mipmap-xxxhdpi/ic_launcher.png" />
 
         <config-file target="AndroidManifest.xml" parent="/manifest/application">
             <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
@@ -95,7 +98,7 @@
             </service>
             <provider
                 android:name="com.marianhello.bgloc.sync.LocationProvider"
-                android:authorities="com.marianhello.bgloc.sync"
+                android:authorities="@string/content_authority"
                 android:exported="false"
                 android:syncable="true"/>
             <service
@@ -132,8 +135,13 @@
                 <param name="android-package" value="com.tenforwardconsulting.cordova.BackgroundGeolocationPlugin"/>
             </feature>
         </config-file>
-        <framework src="com.google.android.gms:play-services-location:+" />
-        <framework src="com.android.support:support-v4:+" />
+
+        <preference name="ACCOUNT_TYPE" default="$PACKAGE_NAME.account" />
+        <preference name="CONTENT_AUTHORITY" default="$PACKAGE_NAME" />
+        <config-file target="res/values/strings.xml" parent="/resources">
+            <string name="account_type">$ACCOUNT_TYPE</string>
+            <string name="content_authority">$CONTENT_AUTHORITY</string>
+        </config-file>
     </platform>
 
     <platform name="ios">

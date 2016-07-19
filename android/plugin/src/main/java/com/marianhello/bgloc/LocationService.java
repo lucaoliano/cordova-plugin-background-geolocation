@@ -35,30 +35,32 @@ import com.marianhello.bgloc.data.BackgroundLocation;
 import com.marianhello.bgloc.data.ConfigurationDAO;
 import com.marianhello.bgloc.data.DAOFactory;
 import com.marianhello.bgloc.data.LocationDAO;
+import com.marianhello.bgloc.sync.BatchStore;
 import com.marianhello.logging.LoggerManager;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Random;
 
 public class LocationService extends Service {
     private static final String TAG = LocationService.class.getSimpleName();
 
-    // The authority for the sync adapter's content provider
-    public static final String AUTHORITY = "com.marianhello.bgloc.sync";
-    // An account type, in the form of a domain name
-    public static final String ACCOUNT_TYPE = "marianhello.com";
     // The account name
-    public static final String ACCOUNT = "dummyaccount";
+    private static final String ACCOUNT = "dummyaccount";
+    private static final String ACCOUNT_TYPE_RESOURCE = "account_type";
+    private static final String CONTENT_AUTHORITY_RESOURCE = "content_authority";
+
     // Instance fields
     Account account;
 
     private LocationDAO dao;
     private Config config;
     private LocationProvider provider;
+    private BatchStore batchStore;
 
     private org.slf4j.Logger log;
 
@@ -132,7 +134,8 @@ public class LocationService extends Service {
 
         super.onCreate();
         dao = (DAOFactory.createLocationDAO(this));
-        account = CreateSyncAccount(this);
+        account = CreateSyncAccount(this, getStringResource(ACCOUNT_TYPE_RESOURCE));
+        batchStore = new BatchStore(this);
     }
 
     @Override
@@ -195,12 +198,12 @@ public class LocationService extends Service {
             builder.setContentTitle(config.getNotificationTitle());
             builder.setContentText(config.getNotificationText());
             if (config.getSmallNotificationIcon() != null) {
-                builder.setSmallIcon(getPluginResource(config.getSmallNotificationIcon()));
+                builder.setSmallIcon(getDrawableResource(config.getSmallNotificationIcon()));
             } else {
                 builder.setSmallIcon(android.R.drawable.ic_menu_mylocation);
             }
             if (config.getLargeNotificationIcon() != null) {
-                builder.setLargeIcon(BitmapFactory.decodeResource(getApplication().getResources(), getPluginResource(config.getLargeNotificationIcon())));
+                builder.setLargeIcon(BitmapFactory.decodeResource(getApplication().getResources(), getDrawableResource(config.getLargeNotificationIcon())));
             }
             if (config.getNotificationIconColor() != null) {
                 builder.setColor(this.parseNotificationIconColor(config.getNotificationIconColor()));
@@ -219,8 +222,16 @@ public class LocationService extends Service {
         return START_STICKY;
     }
 
-    protected Integer getPluginResource(String resourceName) {
-        return getApplication().getResources().getIdentifier(resourceName, "drawable", getApplication().getPackageName());
+    protected int getAppResource(String name, String type) {
+        return getApplication().getResources().getIdentifier(name, type, getApplication().getPackageName());
+    }
+
+    protected Integer getDrawableResource(String resourceName) {
+        return getAppResource(resourceName, "drawable");
+    }
+
+    protected String getStringResource(String name) {
+        return getApplication().getString(getAppResource(name, "string"));
     }
 
     /**
@@ -279,7 +290,13 @@ public class LocationService extends Service {
         // for sake of simplicity we're intentionally one location behind
         if (config.hasUrl() || config.hasSyncUrl()) {
             if (dao.getValidLocationsCount() >= config.getSyncThreshold()) {
-                syncLocations();
+                try {
+                    JSONArray locations = dao.getLocationsForSync();
+                    batchStore.push(locations);
+                    syncLocations();
+                } catch (JSONException e) {
+                    log.error("Prepare sync failed: {}", e.getMessage());
+                }
             }
         }
 
@@ -348,12 +365,13 @@ public class LocationService extends Service {
         Bundle settingsBundle = new Bundle();
         settingsBundle.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
         settingsBundle.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, false);
+        settingsBundle.putBoolean(ContentResolver.SYNC_EXTRAS_DO_NOT_RETRY, false);
         settingsBundle.putBoolean(ContentResolver.SYNC_EXTRAS_UPLOAD, true);
         /*
          * Request the sync for the default account, authority, and
          * manual sync settings
          */
-        ContentResolver.requestSync(account, AUTHORITY, settingsBundle);
+        ContentResolver.requestSync(account, getStringResource(CONTENT_AUTHORITY_RESOURCE), settingsBundle);
     }
 
     /**
@@ -378,9 +396,9 @@ public class LocationService extends Service {
      *
      * @param context The application context
      */
-    public static Account CreateSyncAccount(Context context) {
+    public static Account CreateSyncAccount(Context context, String accountType) {
         // Create the account type and default account
-        Account newAccount = new Account(ACCOUNT, ACCOUNT_TYPE);
+        Account newAccount = new Account(ACCOUNT, accountType);
         // Get an instance of the Android account manager
         AccountManager accountManager =  (AccountManager) context.getSystemService(Context.ACCOUNT_SERVICE);
         /*
@@ -430,7 +448,7 @@ public class LocationService extends Service {
                 return false;
             }
 
-            if (responseCode != 200) {
+            if (responseCode != HttpURLConnection.HTTP_OK) {
                 log.warn("Server error while posting locations responseCode: {}", responseCode);
                 return false;
             }

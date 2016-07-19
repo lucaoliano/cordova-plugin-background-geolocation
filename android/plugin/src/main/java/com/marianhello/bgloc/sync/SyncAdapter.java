@@ -7,6 +7,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SyncResult;
 import android.os.Bundle;
+import android.util.Pair;
 
 import com.marianhello.bgloc.Config;
 import com.marianhello.bgloc.HttpPostService;
@@ -18,6 +19,8 @@ import com.marianhello.logging.LoggerManager;
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.util.HashMap;
 
 /**
@@ -27,8 +30,8 @@ import java.util.HashMap;
 public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
     ContentResolver mContentResolver;
-    private LocationDAO locationDAO;
     private ConfigurationDAO configDAO;
+    private BatchStore store;
 
     private org.slf4j.Logger log;
 
@@ -45,7 +48,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
          */
         mContentResolver = context.getContentResolver();
         configDAO = DAOFactory.createConfigurationDAO(context);
-        locationDAO = DAOFactory.createLocationDAO(context);
+        store = new BatchStore(context);
     }
 
 
@@ -68,7 +71,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
          */
         mContentResolver = context.getContentResolver();
         configDAO = DAOFactory.createConfigurationDAO(context);
-        locationDAO = DAOFactory.createLocationDAO(context);
+        store = new BatchStore(context);
 
     }
 
@@ -85,24 +88,28 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
             ContentProviderClient provider,
             SyncResult syncResult) {
 
-        Config config;
         try {
-            config = configDAO.retrieveConfiguration();
-            log.debug("Will perform sync: {}", config.toString());
+            Config config = configDAO.retrieveConfiguration();
+            log.debug("Sync request: {}", config.toString());
             if (config.hasUrl() || config.hasSyncUrl()) {
-                Long locationsCount = locationDAO.getValidLocationsCount();
-                Integer syncThreshold = config.getSyncThreshold();
-                if (locationsCount >= syncThreshold) {
-                    log.info("Performing sync locations: {}", locationsCount);
+                Pair<String, JSONArray> pair = store.peek();
+                if (pair != null) {
+                    JSONArray locations = pair.second;
+                    log.info("Performing sync {} locations: {}", pair.first, locations.length());
                     try {
-                        JSONArray locations = locationDAO.getLocationsForSync();
                         String url = config.hasSyncUrl() ? config.getSyncUrl() : config.getUrl();
-                        uploadLocations(locations, url, config.getHttpHeaders());
-                    } catch (JSONException e) {
-                        log.error("Error getting locations for sync: {}", e.getMessage());
+                        int responseCode = uploadLocations(locations, url, config.getHttpHeaders());
+                        if (responseCode == HttpURLConnection.HTTP_OK) {
+                            log.info("Locations has been synced successfully");
+                            store.remove(pair.first);
+                        } else {
+                            syncResult.stats.numIoExceptions++;;
+                            log.warn("Error while syncing locations. Server responseCode: {}", responseCode);
+                        }
+                    } catch (IOException e) {
+                        log.warn("Error while syncing locations: {}", e.getMessage());
+                        syncResult.stats.numIoExceptions++;
                     }
-                } else {
-                    log.debug("Skipping locations sync locations: {} threshold: {}", locationsCount, syncThreshold);
                 }
             }
         } catch (JSONException e) {
@@ -110,12 +117,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         }
     }
 
-    private void uploadLocations(JSONArray locations, String url, HashMap httpHeaders) {
-        try {
-            Integer responseCode = HttpPostService.postJSON(url, locations, httpHeaders);
-            log.info("Locations has been synced with responseCode: {}", responseCode);
-        } catch (Throwable e) {
-            log.warn("Error while syncing locations: {}", e.getMessage());
-        }
+    private int uploadLocations(JSONArray locations, String url, HashMap httpHeaders) throws IOException {
+        return HttpPostService.postJSON(url, locations, httpHeaders);
     }
 }

@@ -41,7 +41,7 @@
         </service>
         <provider
             android:name="com.marianhello.bgloc.sync.LocationContentProvider"
-            android:authorities="com.marianhello.bgloc.sync"
+            android:authorities="@string/content_authority"
             android:exported="false"
             android:syncable="true"/>
     </application>
