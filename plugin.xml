@@ -47,7 +47,7 @@
         <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/sync/Authenticator.java" target-dir="src/com/marianhello/bgloc/sync" />
         <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/sync/AuthenticatorService.java" target-dir="src/com/marianhello/bgloc/sync" />
         <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/sync/BatchStore.java" target-dir="src/com/marianhello/bgloc/sync" />
-        <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/sync/LocationProvider.java" target-dir="src/com/marianhello/bgloc/sync" />
+        <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/sync/LocationContentProvider.java" target-dir="src/com/marianhello/bgloc/sync" />
         <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/sync/SyncAdapter.java" target-dir="src/com/marianhello/bgloc/sync" />
         <source-file src="android/plugin/src/main/java/com/marianhello/bgloc/sync/SyncService.java" target-dir="src/com/marianhello/bgloc/sync" />
         <source-file src="android/plugin/src/main/java/com/marianhello/logging/LogEntry.java" target-dir="src/com/marianhello/logging" />
