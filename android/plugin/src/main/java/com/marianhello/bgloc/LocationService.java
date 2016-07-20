@@ -33,8 +33,8 @@ import com.marianhello.bgloc.data.BackgroundLocation;
 import com.marianhello.bgloc.data.ConfigurationDAO;
 import com.marianhello.bgloc.data.DAOFactory;
 import com.marianhello.bgloc.data.LocationDAO;
-import com.marianhello.bgloc.sync.AccountFactory;
-import com.marianhello.bgloc.sync.BatchStore;
+import com.marianhello.bgloc.sync.AccountHelper;
+import com.marianhello.bgloc.sync.AuthenticatorService;
 import com.marianhello.bgloc.sync.SyncService;
 import com.marianhello.logging.LoggerManager;
 
@@ -52,7 +52,6 @@ public class LocationService extends Service {
     private Config config;
     private LocationProvider provider;
     private Account syncAccount;
-    private BatchStore batchStore;
 
     private org.slf4j.Logger log;
 
@@ -126,9 +125,8 @@ public class LocationService extends Service {
 
         super.onCreate();
         dao = (DAOFactory.createLocationDAO(this));
-        syncAccount = AccountFactory.CreateSyncAccount(this, getStringResource(Config.ACCOUNT_TYPE_RESOURCE));
-
-        batchStore = new BatchStore(this);
+        syncAccount = AccountHelper.CreateSyncAccount(this,
+                AuthenticatorService.getAccount(getStringResource(Config.ACCOUNT_TYPE_RESOURCE)));
     }
 
     @Override
@@ -282,14 +280,9 @@ public class LocationService extends Service {
 
         // for sake of simplicity we're intentionally one location behind
         if (config.hasUrl() || config.hasSyncUrl()) {
+            log.debug("Locations count: {} threshold: {}", dao.getValidLocationsCount(), config.getSyncThreshold());
             if (dao.getValidLocationsCount() >= config.getSyncThreshold()) {
-                try {
-                    JSONArray locations = dao.getLocationsForSync();
-                    batchStore.push(locations);
-                    SyncService.sync(syncAccount, getStringResource(Config.CONTENT_AUTHORITY_RESOURCE));
-                } catch (JSONException e) {
-                    log.error("Prepare sync failed: {}", e.getMessage());
-                }
+                syncLocations();
             }
         }
 
@@ -348,6 +341,11 @@ public class LocationService extends Service {
         else {
             task.execute(location);
         }
+    }
+
+    public void syncLocations() {
+        log.debug("Attempt to sync locations");
+        SyncService.sync(syncAccount, getStringResource(Config.CONTENT_AUTHORITY_RESOURCE));
     }
 
     /**

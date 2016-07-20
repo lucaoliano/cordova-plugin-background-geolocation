@@ -1,10 +1,13 @@
 package com.marianhello.bgloc.sync;
 
+import android.accounts.Account;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 
 public class AuthenticatorService extends Service {
+    public static final String ACCOUNT_NAME = "dummy";
+
     private Authenticator mAuthenticator;
 
     public AuthenticatorService() {
@@ -23,5 +26,10 @@ public class AuthenticatorService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return mAuthenticator.getIBinder();
+    }
+
+
+    public static Account getAccount(String accountType) {
+        return new Account(ACCOUNT_NAME, accountType);
     }
 }

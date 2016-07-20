@@ -1,15 +1,11 @@
 package com.marianhello.bgloc.sync;
 
 import android.accounts.Account;
-import android.accounts.AccountManager;
 import android.app.Service;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.IBinder;
-
-import com.marianhello.bgloc.Config;
-import com.marianhello.bgloc.ResourceResolver;
 
 /**
  * Define a Service that returns an IBinder for the

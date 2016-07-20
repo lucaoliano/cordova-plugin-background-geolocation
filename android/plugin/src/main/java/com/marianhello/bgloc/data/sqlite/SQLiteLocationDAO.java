@@ -11,10 +11,6 @@ import com.marianhello.bgloc.data.BackgroundLocation;
 import com.marianhello.bgloc.data.LocationDAO;
 import com.marianhello.bgloc.data.sqlite.LocationContract.LocationEntry;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -89,51 +85,6 @@ public class SQLiteLocationDAO implements LocationDAO {
 
     return locations;
   }
-
-  private JSONArray getLocationsAsJSONArray(String whereClause, String[] whereArgs) throws JSONException {
-    JSONArray locations = new JSONArray();
-
-    String[] columns = {
-            LocationEntry._ID,
-            LocationEntry.COLUMN_NAME_TIME,
-            LocationEntry.COLUMN_NAME_ACCURACY,
-            LocationEntry.COLUMN_NAME_SPEED,
-            LocationEntry.COLUMN_NAME_BEARING,
-            LocationEntry.COLUMN_NAME_ALTITUDE,
-            LocationEntry.COLUMN_NAME_LATITUDE,
-            LocationEntry.COLUMN_NAME_LONGITUDE,
-            LocationEntry.COLUMN_NAME_PROVIDER,
-            LocationEntry.COLUMN_NAME_LOCATION_PROVIDER
-    };
-
-    String groupBy = null;
-    String having = null;
-    String orderBy = LocationEntry.COLUMN_NAME_TIME + " ASC";
-    Cursor cursor = null;
-
-    try {
-      cursor = db.query(
-              LocationEntry.TABLE_NAME,  // The table to query
-              columns,                   // The columns to return
-              whereClause,               // The columns for the WHERE clause
-              whereArgs,                 // The values for the WHERE clause
-              groupBy,                   // don't group the rows
-              having,                    // don't filter by row groups
-              orderBy                    // The sort order
-      );
-      while (cursor.moveToNext()) {
-          JSONObject jsonLocation = hydrate(cursor).toJSONObject();
-          locations.put(jsonLocation);
-      }
-    } finally {
-      if (cursor != null) {
-        cursor.close();
-      }
-    }
-
-    return locations;
-  }
-
   public Collection<BackgroundLocation> getAllLocations() {
     return getLocations(null, null);
   }
@@ -143,24 +94,6 @@ public class SQLiteLocationDAO implements LocationDAO {
     String[] whereArgs = { "1" };
 
     return getLocations(whereClause, whereArgs);
-  }
-
-  public JSONArray getLocationsForSync() throws JSONException {
-    JSONArray locations = new JSONArray();
-
-    String whereClause = LocationEntry.COLUMN_NAME_VALID + " = ?";
-    String[] whereArgs = { "1" };
-
-    db.beginTransactionNonExclusive();
-    locations = getLocationsAsJSONArray(whereClause, whereArgs);
-
-    ContentValues values = new ContentValues();
-    values.put(LocationEntry.COLUMN_NAME_VALID, 0);
-    db.update(LocationEntry.TABLE_NAME, values, null, null);
-    db.setTransactionSuccessful();
-    db.endTransaction();
-
-    return locations;
   }
 
   public Long getValidLocationsCount() {
