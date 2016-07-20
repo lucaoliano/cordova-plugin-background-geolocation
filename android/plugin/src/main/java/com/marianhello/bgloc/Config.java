@@ -30,6 +30,10 @@ public class Config implements Parcelable
     public static final int ANDROID_DISTANCE_FILTER_PROVIDER = 0;
     public static final int ANDROID_ACTIVITY_PROVIDER = 1;
 
+    // actual values should be read from strings.xml
+    public static final String ACCOUNT_TYPE_RESOURCE = "account_type";
+    public static final String CONTENT_AUTHORITY_RESOURCE = "content_authority";
+
     private float stationaryRadius = 50;
     private Integer distanceFilter = 500;
     private Integer desiredAccuracy = 100;
@@ -295,7 +299,7 @@ public class Config implements Parcelable
         this.syncThreshold = syncThreshold;
     }
 
-    public HashMap getHttpHeaders() {
+    public HashMap<String, String> getHttpHeaders() {
         return this.httpHeaders;
     }
 

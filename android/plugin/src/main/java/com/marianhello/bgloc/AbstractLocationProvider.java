@@ -25,8 +25,6 @@ import org.json.JSONObject;
  * AbstractLocationProvider
  */
 public abstract class AbstractLocationProvider implements LocationProvider {
-    private static final String TAG = "AbstractLocationProvider";
-
     private static final int PERMISSION_DENIED_ERROR_CODE = 2;
 
     protected static enum Tone {

@@ -10,11 +10,9 @@ This is a new class
 package com.marianhello.bgloc;
 
 import android.accounts.Account;
-import android.accounts.AccountManager;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -35,7 +33,9 @@ import com.marianhello.bgloc.data.BackgroundLocation;
 import com.marianhello.bgloc.data.ConfigurationDAO;
 import com.marianhello.bgloc.data.DAOFactory;
 import com.marianhello.bgloc.data.LocationDAO;
+import com.marianhello.bgloc.sync.AccountFactory;
 import com.marianhello.bgloc.sync.BatchStore;
+import com.marianhello.bgloc.sync.SyncService;
 import com.marianhello.logging.LoggerManager;
 
 import org.json.JSONArray;
@@ -47,19 +47,11 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class LocationService extends Service {
-    private static final String TAG = LocationService.class.getSimpleName();
-
-    // The account name
-    private static final String ACCOUNT = "dummyaccount";
-    private static final String ACCOUNT_TYPE_RESOURCE = "account_type";
-    private static final String CONTENT_AUTHORITY_RESOURCE = "content_authority";
-
-    // Instance fields
-    Account account;
 
     private LocationDAO dao;
     private Config config;
     private LocationProvider provider;
+    private Account syncAccount;
     private BatchStore batchStore;
 
     private org.slf4j.Logger log;
@@ -134,7 +126,8 @@ public class LocationService extends Service {
 
         super.onCreate();
         dao = (DAOFactory.createLocationDAO(this));
-        account = CreateSyncAccount(this, getStringResource(ACCOUNT_TYPE_RESOURCE));
+        syncAccount = AccountFactory.CreateSyncAccount(this, getStringResource(Config.ACCOUNT_TYPE_RESOURCE));
+
         batchStore = new BatchStore(this);
     }
 
@@ -293,7 +286,7 @@ public class LocationService extends Service {
                 try {
                     JSONArray locations = dao.getLocationsForSync();
                     batchStore.push(locations);
-                    syncLocations();
+                    SyncService.sync(syncAccount, getStringResource(Config.CONTENT_AUTHORITY_RESOURCE));
                 } catch (JSONException e) {
                     log.error("Prepare sync failed: {}", e.getMessage());
                 }
@@ -306,12 +299,17 @@ public class LocationService extends Service {
             postLocation(location);
         }
 
+        Bundle bundle = new Bundle();
+        bundle.putParcelable("location", location);
+        Message msg = Message.obtain(null, MSG_LOCATION_UPDATE);
+        msg.setData(bundle);
+
+        sendClientMessage(msg);
+    }
+
+    public void sendClientMessage(Message msg) {
         for (int i = mClients.size() - 1; i >= 0; i--) {
             try {
-                Bundle bundle = new Bundle();
-                bundle.putParcelable("location", location);
-                Message msg = Message.obtain(null, MSG_LOCATION_UPDATE);
-                msg.setData(bundle);
                 mClients.get(i).send(msg);
             } catch (RemoteException e) {
                 // The client is dead.  Remove it from the list;
@@ -323,20 +321,12 @@ public class LocationService extends Service {
     }
 
     public void handleError(JSONObject error) {
-        for (int i = mClients.size() - 1; i >= 0; i--) {
-            try {
-                Bundle bundle = new Bundle();
-                bundle.putString("error", error.toString());
-                Message msg = Message.obtain(null, MSG_ERROR);
-                msg.setData(bundle);
-                mClients.get(i).send(msg);
-            } catch (RemoteException e) {
-                // The client is dead.  Remove it from the list;
-                // we are going through the list from back to front
-                // so this is safe to do inside the loop.
-                mClients.remove(i);
-            }
-        }
+        Bundle bundle = new Bundle();
+        bundle.putString("error", error.toString());
+        Message msg = Message.obtain(null, MSG_ERROR);
+        msg.setData(bundle);
+
+        sendClientMessage(msg);
     }
 
     // method will mutate location
@@ -360,20 +350,6 @@ public class LocationService extends Service {
         }
     }
 
-    public void syncLocations() {
-        // Pass the settings flags by inserting them in a bundle
-        Bundle settingsBundle = new Bundle();
-        settingsBundle.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
-        settingsBundle.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, false);
-        settingsBundle.putBoolean(ContentResolver.SYNC_EXTRAS_DO_NOT_RETRY, false);
-        settingsBundle.putBoolean(ContentResolver.SYNC_EXTRAS_UPLOAD, true);
-        /*
-         * Request the sync for the default account, authority, and
-         * manual sync settings
-         */
-        ContentResolver.requestSync(account, getStringResource(CONTENT_AUTHORITY_RESOURCE), settingsBundle);
-    }
-
     /**
      * Forces the main activity to re-launch if it's unloaded.
      */
@@ -389,36 +365,6 @@ public class LocationService extends Service {
 
     public void setConfig(Config config) {
         this.config = config;
-    }
-
-    /**
-     * Create a new dummy account for the sync adapter
-     *
-     * @param context The application context
-     */
-    public static Account CreateSyncAccount(Context context, String accountType) {
-        // Create the account type and default account
-        Account newAccount = new Account(ACCOUNT, accountType);
-        // Get an instance of the Android account manager
-        AccountManager accountManager =  (AccountManager) context.getSystemService(Context.ACCOUNT_SERVICE);
-        /*
-         * Add the account and account type, no password or user data
-         * If successful, return the Account object, otherwise report an error.
-         */
-        if (accountManager.addAccountExplicitly(newAccount, null, null)) {
-            /*
-             * If you don't set android:syncable="true" in
-             * in your <provider> element in the manifest,
-             * then call context.setIsSyncable(account, AUTHORITY, 1)
-             * here.
-             */
-        } else {
-            /*
-             * The account exists or some other error occurred. Log this, report it,
-             * or handle it internally.
-             */
-        }
-        return newAccount;
     }
 
     private class PostLocationTask extends AsyncTask<BackgroundLocation, Integer, Boolean> {

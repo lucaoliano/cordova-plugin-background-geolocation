@@ -24,7 +24,7 @@ import com.marianhello.bgloc.data.ConfigurationDAO;
  * BootCompletedReceiver class
  */
 public class BootCompletedReceiver extends BroadcastReceiver {
-    private static final String TAG = BootCompletedReceiver.class.getSimpleName();
+    private static final String TAG = BootCompletedReceiver.class.getName();
 
     @Override
      public void onReceive(Context context, Intent intent) {

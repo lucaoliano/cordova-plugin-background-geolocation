@@ -16,12 +16,17 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.Application;
+import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SyncInfo;
+import android.content.SyncStatusObserver;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.net.Uri;
@@ -34,14 +39,18 @@ import android.os.Messenger;
 import android.os.RemoteException;
 import android.provider.Settings;
 import android.provider.Settings.SettingNotFoundException;
+import android.support.v4.app.NotificationCompat;
 import android.text.TextUtils;
 
 import com.marianhello.bgloc.Config;
 import com.marianhello.bgloc.LocationService;
+import com.marianhello.bgloc.ResourceResolver;
 import com.marianhello.bgloc.data.BackgroundLocation;
 import com.marianhello.bgloc.data.ConfigurationDAO;
 import com.marianhello.bgloc.data.DAOFactory;
 import com.marianhello.bgloc.data.LocationDAO;
+import com.marianhello.bgloc.sync.AccountFactory;
+import com.marianhello.bgloc.sync.SyncService;
 import com.marianhello.cordova.JSONErrorFactory;
 import com.marianhello.cordova.PermissionHelper;
 import com.marianhello.logging.LogEntry;
@@ -59,10 +68,7 @@ import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import ch.qos.logback.core.helpers.ThrowableToStringArray;
-
 public class BackgroundGeolocationPlugin extends CordovaPlugin {
-    private static final String TAG = BackgroundGeolocationPlugin.class.getSimpleName();
 
     public static final String ACTION_START = "start";
     public static final String ACTION_STOP = "stop";
@@ -88,12 +94,17 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
     /** Flag indicating whether we have called bind on the service. */
     private Boolean mIsBound = false;
     private Boolean isServiceRunning = false;
+    private Boolean isSyncing = false;
 
     private Config config;
     private CallbackContext callbackContext;
     private CallbackContext actionStartCallbackContext;
     private CallbackContext locationModeChangeCallbackContext;
     private ExecutorService executorService;
+    private SyncStatusObserver observer;
+    private Object syncHandle;
+    private Account syncAccount;
+    private NotificationManager notifyManager;
 
     private org.slf4j.Logger log;
 
@@ -200,18 +211,39 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
 
     @Override
     protected void pluginInitialize() {
+        super.pluginInitialize();
+
         log = LoggerManager.getLogger(BackgroundGeolocationPlugin.class);
         LoggerManager.enableDBLogging();
-
         log.info("initializing plugin");
 
-        super.pluginInitialize();
+        final ResourceResolver res = ResourceResolver.newInstance(getApplication());
+        final String authority = res.getStringResource(Config.CONTENT_AUTHORITY_RESOURCE);
+
         executorService =  Executors.newSingleThreadExecutor();
+        notifyManager = (NotificationManager) getActivity().getSystemService(Context.NOTIFICATION_SERVICE);
+        syncAccount = AccountFactory.CreateSyncAccount(getContext(), res.getStringResource(Config.ACCOUNT_TYPE_RESOURCE));
+
+        observer = new SyncStatusObserver() {
+            @Override
+            public void onStatusChanged(int which) {
+                Context context = getContext();
+                AccountManager am = AccountManager.get(context);
+                Account account = am.getAccountsByType(res.getStringResource(Config.ACCOUNT_TYPE_RESOURCE))[0];
+                boolean isSynchronizing = isSyncActive(account, authority);
+                log.debug("Sync status changed: {}", which);
+                updateSyncState(isSynchronizing);
+            }
+        };
+
+        registerSyncStatusListener();
+
+        SyncService.sync(syncAccount, authority);
     }
 
     public boolean execute(String action, final JSONArray data, final CallbackContext callbackContext) {
-        Activity activity = this.cordova.getActivity();
-        Context context = activity.getApplicationContext();
+        Activity activity = getActivity();
+        Context context = getContext();
 
         if (ACTION_START.equals(action)) {
             if (config == null) {
@@ -382,6 +414,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
      */
     public void onPause(boolean multitasking) {
         log.info("App will be paused multitasking={}", multitasking);
+        unregisterSyncStatusListener();
     }
 
     /**
@@ -391,6 +424,10 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
      */
     public void onResume(boolean multitasking) {
         log.info("App will be resumed multitasking={}", multitasking);
+
+        // Refresh synchronization status
+        observer.onStatusChanged(0);
+        registerSyncStatusListener();
     }
 
     /**
@@ -414,6 +451,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
      @Override
     public void onDestroy() {
         log.info("Destroying plugin");
+        unregisterSyncStatusListener();
         unregisterLocationModeChangeReceiver();
         // Unbind from the service
         doUnbindService();
@@ -423,8 +461,37 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
         super.onDestroy();
     }
 
-    public Context getContext() {
-        return this.cordova.getActivity().getApplicationContext();
+    protected void registerSyncStatusListener() {
+        if (syncHandle == null) {
+            // Watch for synchronization status changes
+            final int mask = ContentResolver.SYNC_OBSERVER_TYPE_PENDING |
+                    ContentResolver.SYNC_OBSERVER_TYPE_ACTIVE;
+            syncHandle = ContentResolver.addStatusChangeListener(mask, observer);
+        }
+    }
+
+    protected void unregisterSyncStatusListener() {
+        // Remove our synchronization listener if registered
+        if (syncHandle != null) {
+            ContentResolver.removeStatusChangeListener(syncHandle);
+            syncHandle = null;
+        }
+    }
+
+    protected Activity getActivity() {
+        return this.cordova.getActivity();
+    }
+
+    protected Application getApplication() {
+        return getActivity().getApplication();
+    }
+
+    protected Context getContext() {
+        return getActivity().getApplicationContext();
+    }
+
+    protected void runOnUiThread(Runnable action) {
+        getActivity().runOnUiThread(action);
     }
 
     protected void startAndBindBackgroundService () {
@@ -435,7 +502,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
     protected void startBackgroundService () {
         if (!isServiceRunning) {
             log.info("Starting bg service");
-            Activity activity = this.cordova.getActivity();
+            Activity activity = getActivity();
             Intent locationServiceIntent = new Intent(activity, LocationService.class);
             locationServiceIntent.putExtra("config", config);
             locationServiceIntent.addFlags(Intent.FLAG_FROM_BACKGROUND);
@@ -448,7 +515,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
     protected void stopBackgroundService() {
         if (isServiceRunning) {
             log.info("Stopping bg service");
-            Activity activity = this.cordova.getActivity();
+            Activity activity = getActivity();
             activity.stopService(new Intent(activity, LocationService.class));
             isServiceRunning = false;
         }
@@ -460,7 +527,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
         // applications replace our component.
         if (!mIsBound) {
             log.info("Binding to bg service");
-            Activity activity = this.cordova.getActivity();
+            Activity activity = getActivity();
             Intent locationServiceIntent = new Intent(activity, LocationService.class);
             locationServiceIntent.putExtra("config", config);
             activity.bindService(locationServiceIntent, mConnection, Context.BIND_IMPORTANT);
@@ -484,7 +551,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
                 }
 
                 // Detach our existing connection.
-                Activity activity = this.cordova.getActivity();
+                Activity activity = getActivity();
                 activity.unbindService(mConnection);
                 mIsBound = false;
             }
@@ -567,8 +634,7 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
     }
 
     public void persistConfiguration(Config config) throws NullPointerException {
-        Context context = this.cordova.getActivity().getApplicationContext();
-        ConfigurationDAO dao = DAOFactory.createConfigurationDAO(context);
+        ConfigurationDAO dao = DAOFactory.createConfigurationDAO(getContext());
 
         dao.persistConfiguration(config);
     }
@@ -618,5 +684,52 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
                 actionStartCallbackContext = null;
                 break;
         }
+    }
+
+    private static boolean isSyncActive(Account account, String authority) {
+        for (SyncInfo syncInfo : ContentResolver.getCurrentSyncs()) {
+            if (syncInfo.account.equals(account) &&
+                    syncInfo.authority.equals(authority)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void updateSyncState(final boolean isSyncing) {
+        final int id = 1;
+        final Boolean wasSyncing = this.isSyncing;
+        this.isSyncing = isSyncing;
+        if (!wasSyncing && !isSyncing) { return; }
+
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                NotificationCompat.Builder builder = new NotificationCompat.Builder(getContext());
+                builder.setContentTitle("Locations upload");
+                builder.setSmallIcon(android.R.drawable.ic_dialog_info);
+
+                if (isSyncing) {
+                    builder.setContentText("Upload in progress");
+                    builder.setProgress(0, 0, true);
+//                    builder.setAutoCancel(false);
+                } else {
+                    builder.setContentText("Upload complete");
+                    builder.setProgress(0, 0, false);
+//                    builder.setAutoCancel(true);
+
+                    Handler h = new Handler();
+                    long delayInMilliseconds = 5000;
+                    h.postDelayed(new Runnable() {
+                        public void run() {
+                            notifyManager.cancel(id);
+                        }
+                    }, delayInMilliseconds);
+                }
+
+                // Issues the notification
+                notifyManager.notify(id, builder.build());
+            }
+        });
     }
 }

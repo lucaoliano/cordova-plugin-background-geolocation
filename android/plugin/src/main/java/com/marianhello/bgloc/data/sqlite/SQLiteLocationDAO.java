@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class SQLiteLocationDAO implements LocationDAO {
-  private static final String TAG = SQLiteLocationDAO.class.getSimpleName();
+  private static final String TAG = SQLiteLocationDAO.class.getName();
 
   private SQLiteDatabase db;
 

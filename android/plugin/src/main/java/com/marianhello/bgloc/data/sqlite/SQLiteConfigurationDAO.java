@@ -23,7 +23,7 @@ import com.marianhello.bgloc.data.sqlite.ConfigurationContract.ConfigurationEntr
 import com.tenforwardconsulting.cordova.BackgroundGeolocationPlugin;
 
 public class SQLiteConfigurationDAO implements ConfigurationDAO {
-  private static final String TAG = SQLiteConfigurationDAO.class.getSimpleName();
+  private static final String TAG = SQLiteConfigurationDAO.class.getName();
 
     private SQLiteDatabase db;
 

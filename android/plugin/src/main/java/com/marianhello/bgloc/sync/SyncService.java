@@ -1,8 +1,15 @@
 package com.marianhello.bgloc.sync;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.app.Service;
+import android.content.ContentResolver;
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.IBinder;
+
+import com.marianhello.bgloc.Config;
+import com.marianhello.bgloc.ResourceResolver;
 
 /**
  * Define a Service that returns an IBinder for the
@@ -47,5 +54,20 @@ public class SyncService extends Service {
          * constructors call super()
          */
         return sSyncAdapter.getSyncAdapterBinder();
+    }
+
+    public static void sync(Account account, String authority) {
+        // Pass the settings flags by inserting them in a bundle
+        Bundle settingsBundle = new Bundle();
+        settingsBundle.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
+        settingsBundle.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, false);
+        settingsBundle.putBoolean(ContentResolver.SYNC_EXTRAS_DO_NOT_RETRY, false);
+        settingsBundle.putBoolean(ContentResolver.SYNC_EXTRAS_UPLOAD, true);
+
+        /*
+         * Request the sync for the default account, authority, and
+         * manual sync settings
+         */
+        ContentResolver.requestSync(account, authority, settingsBundle);
     }
 }

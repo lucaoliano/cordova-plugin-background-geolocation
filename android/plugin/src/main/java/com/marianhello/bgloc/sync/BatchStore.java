@@ -1,6 +1,7 @@
 package com.marianhello.bgloc.sync;
 
 import android.content.Context;
+import android.util.Log;
 import android.util.Pair;
 
 import org.json.JSONArray;
@@ -20,6 +21,8 @@ import java.util.Calendar;
  * Created by finch on 18/07/16.
  */
 public class BatchStore {
+
+    private static final String TAG = BatchStore.class.getName();
 
     public static final String SYNC_DIRECTORY = "sync";
     private Context context;
@@ -52,8 +55,6 @@ public class BatchStore {
 
     public Pair<String, JSONArray> peek() {
         File batch = null;
-        JSONArray data = null;
-
         File directory = context.getDir(SYNC_DIRECTORY, Context.MODE_PRIVATE);
         File[] files = directory.listFiles(new FileFilter() {
             public boolean accept(File file) {
@@ -82,20 +83,23 @@ public class BatchStore {
                 sb.append(line);
             }
             reader.close();
-            data = new JSONArray(sb.toString());
+
+            return new Pair(batch.getName(), new JSONArray(sb.toString()));
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            Log.e(TAG, "Peek failed: " + e.getMessage());
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e(TAG, "Peek failed: " + e.getMessage());
         } catch (JSONException e) {
-            e.printStackTrace();
+            Log.e(TAG, "Peek failed: " + e.getMessage());
         }
 
-        return new Pair(batch.getName(), data);
+        return null;
     }
 
-    public void remove(String filename) {
+    public boolean remove(String filename) {
+        Log.d(TAG, "Will delete file: " + filename);
         File file = new File(SYNC_DIRECTORY, filename);
-        file.delete();
+        Log.d(TAG, "Delete file: " + file.toString());
+        return file.delete();
     }
 }

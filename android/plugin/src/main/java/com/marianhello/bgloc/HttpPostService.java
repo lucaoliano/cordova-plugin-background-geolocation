@@ -15,7 +15,7 @@ import java.io.OutputStreamWriter;
 
 public class HttpPostService {
 
-    private static final String TAG = HttpPostService.class.getSimpleName();
+    private static final String TAG = HttpPostService.class.getName();
 
     public static int postJSON(String url, Object json, Map headers) throws IOException {
         String jsonString = json.toString();

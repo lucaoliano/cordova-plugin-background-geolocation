@@ -94,20 +94,29 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
             if (config.hasUrl() || config.hasSyncUrl()) {
                 Pair<String, JSONArray> pair = store.peek();
                 if (pair != null) {
+                    String filename = pair.first;
                     JSONArray locations = pair.second;
                     log.info("Performing sync {} locations: {}", pair.first, locations.length());
                     try {
                         String url = config.hasSyncUrl() ? config.getSyncUrl() : config.getUrl();
-                        int responseCode = uploadLocations(locations, url, config.getHttpHeaders());
+                        HashMap<String, String> httpHeaders = new HashMap<String, String>();
+                        httpHeaders.putAll(config.getHttpHeaders());
+                        httpHeaders.put("x-batch-filename", filename);
+
+                        int responseCode = uploadLocations(locations, url, httpHeaders);
                         if (responseCode == HttpURLConnection.HTTP_OK) {
-                            log.info("Locations has been synced successfully");
-                            store.remove(pair.first);
+                            log.info("Batch synced successfully");
+                            if (store.remove(filename)) {
+                                log.info("Batch file has been deleted: {}", filename);
+                            } else {
+                                log.warn("Batch file has not been deleted: {}", filename);
+                            }
                         } else {
                             syncResult.stats.numIoExceptions++;;
-                            log.warn("Error while syncing locations. Server responseCode: {}", responseCode);
+                            log.warn("Error while syncing. Server responseCode: {}", responseCode);
                         }
                     } catch (IOException e) {
-                        log.warn("Error while syncing locations: {}", e.getMessage());
+                        log.warn("Error while syncing: {}", e.getMessage());
                         syncResult.stats.numIoExceptions++;
                     }
                 }
