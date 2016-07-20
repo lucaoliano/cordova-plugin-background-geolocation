@@ -282,7 +282,8 @@ public class LocationService extends Service {
         if (config.hasUrl() || config.hasSyncUrl()) {
             log.debug("Locations count: {} threshold: {}", dao.getValidLocationsCount(), config.getSyncThreshold());
             if (dao.getValidLocationsCount() >= config.getSyncThreshold()) {
-                syncLocations();
+                log.debug("Attempt to sync locations");
+                SyncService.sync(syncAccount, getStringResource(Config.CONTENT_AUTHORITY_RESOURCE));
             }
         }
 
@@ -341,11 +342,6 @@ public class LocationService extends Service {
         else {
             task.execute(location);
         }
-    }
-
-    public void syncLocations() {
-        log.debug("Attempt to sync locations");
-        SyncService.sync(syncAccount, getStringResource(Config.CONTENT_AUTHORITY_RESOURCE));
     }
 
     /**

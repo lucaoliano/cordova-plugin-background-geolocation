@@ -109,7 +109,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements Uploadin
             log.debug("Sync request: {}", config.toString());
             if (config.hasUrl() || config.hasSyncUrl()) {
 
-                File file = getBatchForSync();
+                File file = getBatchForSync(this.getContext());
                 if (file == null) {
                     file = createBatch();
                     if (file == null) {
@@ -132,8 +132,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements Uploadin
                     builder.setSmallIcon(android.R.drawable.ic_dialog_info);
 
                     builder.setContentText("Sync completed");
-                    builder.setProgress(100, 0, false);
-                    // Issues the notification
+                    builder.setProgress(0, 0, false);
+                    builder.setAutoCancel(true);
                     notifyManager.notify(NOTIFICATION_ID, builder.build());
 
                     if (file.delete()) {
@@ -149,8 +149,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements Uploadin
                     builder.setSmallIcon(android.R.drawable.ic_dialog_info);
 
                     builder.setContentText("Sync failed");
-                    builder.setProgress(100, 0, false);
-                    // Issues the notification
+                    builder.setProgress(0, 0, false);
+                    builder.setAutoCancel(true);
                     notifyManager.notify(NOTIFICATION_ID, builder.build());
                 }
             }
@@ -159,38 +159,12 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements Uploadin
         }
     }
 
-    public File getBatchForSync() {
-        File batch = null;
-        File directory = this.getContext().getDir(SYNC_DIRECTORY, Context.MODE_PRIVATE);
-        File[] files = directory.listFiles(new FileFilter() {
-            public boolean accept(File file) {
-                return file.isFile();
-            }
-        });
-
-        long lastModified = Long.MAX_VALUE;
-        for (File file : files) {
-            if (file.lastModified() < lastModified) {
-                batch = file;
-                lastModified = file.lastModified();
-            }
-        }
-
-        if (batch == null) {
-            return null;
-        }
-
-        return batch;
-    }
-
     private boolean uploadLocations(File file, String url, HashMap httpHeaders) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getContext());
         builder.setContentTitle("Syncing locations");
         builder.setSmallIcon(android.R.drawable.ic_dialog_info);
 
         builder.setContentText("Sync in progress");
-        builder.setProgress(100, 0, true);
-        // Issues the notification
         notifyManager.notify(NOTIFICATION_ID, builder.build());
 
         try {
@@ -213,8 +187,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements Uploadin
         builder.setSmallIcon(android.R.drawable.ic_dialog_info);
 
         builder.setContentText("Sync in progress");
-        builder.setProgress(100, progress, true);
-        // Issues the notification
+        builder.setProgress(100, progress, false);
         notifyManager.notify(NOTIFICATION_ID, builder.build());
     }
 
@@ -306,5 +279,29 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements Uploadin
         }
 
         return null;
+    }
+
+    public static File getBatchForSync(Context context) {
+        File batch = null;
+        File directory = context.getDir(SYNC_DIRECTORY, Context.MODE_PRIVATE);
+        File[] files = directory.listFiles(new FileFilter() {
+            public boolean accept(File file) {
+                return file.isFile();
+            }
+        });
+
+        long lastModified = Long.MAX_VALUE;
+        for (File file : files) {
+            if (file.lastModified() < lastModified) {
+                batch = file;
+                lastModified = file.lastModified();
+            }
+        }
+
+        if (batch == null) {
+            return null;
+        }
+
+        return batch;
     }
 }

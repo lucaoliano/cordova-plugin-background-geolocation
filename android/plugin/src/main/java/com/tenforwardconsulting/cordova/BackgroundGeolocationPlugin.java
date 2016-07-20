@@ -45,6 +45,7 @@ import com.marianhello.bgloc.data.DAOFactory;
 import com.marianhello.bgloc.data.LocationDAO;
 import com.marianhello.bgloc.sync.AccountHelper;
 import com.marianhello.bgloc.sync.AuthenticatorService;
+import com.marianhello.bgloc.sync.SyncAdapter;
 import com.marianhello.bgloc.sync.SyncService;
 import com.marianhello.cordova.JSONErrorFactory;
 import com.marianhello.cordova.PermissionHelper;
@@ -215,7 +216,9 @@ public class BackgroundGeolocationPlugin extends CordovaPlugin {
         syncAccount = AccountHelper.CreateSyncAccount(getContext(),
                 AuthenticatorService.getAccount(res.getStringResource(Config.ACCOUNT_TYPE_RESOURCE)));
 
-        SyncService.sync(syncAccount, authority);
+        if (SyncAdapter.getBatchForSync(getContext()) != null) {
+            SyncService.sync(syncAccount, authority);
+        }
     }
 
     public boolean execute(String action, final JSONArray data, final CallbackContext callbackContext) {
