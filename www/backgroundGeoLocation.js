@@ -54,15 +54,16 @@ var backgroundGeoLocation = {
             //Android FusedLocation config
             interval              = (config.interval >= 0) ? config.interval : locationTimeout * 1000, // milliseconds
             fastestInterval       = (config.fastestInterval >= 0) ? config.fastestInterval : 120000, // milliseconds
-            activitiesInterval    = config.activitiesInterval || 1000;
-            url                   = config.url;
-            headers               = config.headers;
-            params                = config.params;
-            oauthUrl              = config.oauthUrl;
-            accessToken           = config.accessToken;
-            refreshToken          = config.refreshToken;
-            clientId              = config.clientId;
-            username              = config.username;
+            activitiesInterval    = config.activitiesInterval || 1000,
+            stopOnStillActivity   = (config.stopOnStillActivity === false) ? false : true,
+            url                   = config.url,
+            headers               = config.headers,
+            params                = config.params,
+            oauthUrl              = config.oauthUrl,
+            accessToken           = config.accessToken,
+            refreshToken          = config.refreshToken,
+            clientId              = config.clientId,
+            username              = config.username,
             password              = config.password;
 
         exec(success || function() {},
@@ -84,6 +85,7 @@ var backgroundGeoLocation = {
                 interval,
                 fastestInterval,
                 activitiesInterval,
+                stopOnStillActivity,
                 url,
                 headers,
                 params,

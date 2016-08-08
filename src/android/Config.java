@@ -38,6 +38,7 @@ public class Config implements Parcelable
     private Integer interval = 600000; //milliseconds
     private Integer fastestInterval = 120000; //milliseconds
     private Integer activitiesInterval = 1000; //milliseconds
+    private Boolean stopOnStillActivity = true;
     private String url;
     private String headers;
     private String params;
@@ -69,6 +70,7 @@ public class Config implements Parcelable
         out.writeInt(getInterval());
         out.writeInt(getFastestInterval());
         out.writeInt(getActivitiesInterval());
+        out.writeValue(getStopOnStillActivity());
         out.writeString(getUrl());
         out.writeString(getHeaders());
         out.writeString(getParams());
@@ -144,6 +146,9 @@ public class Config implements Parcelable
 
         if (jsonObject.has("activitiesInterval") && !jsonObject.isNull("activitiesInterval"))
             setActivitiesInterval(jsonObject.getInt("activitiesInterval"));
+        
+        if (jsonObject.has("stopOnStillActivity") && !jsonObject.isNull("stopOnStillActivity"))
+            setStopOnStillActivity(jsonObject.getBoolean("stopOnStillActivity"));    
 
         if (jsonObject.has("url") && !jsonObject.isNull("url"))
             setUrl(jsonObject.getString("url"));
@@ -185,6 +190,7 @@ public class Config implements Parcelable
         setInterval(in.readInt());
         setFastestInterval(in.readInt());
         setActivitiesInterval(in.readInt());
+        setStopOnStillActivity((Boolean) in.readValue(null));
         setUrl(in.readString());
         setHeaders(in.readString());
         setParams(in.readString());
@@ -412,6 +418,14 @@ public class Config implements Parcelable
         this.password = password;
     }
 
+    public Boolean getStopOnStillActivity() {
+        return stopOnStillActivity;
+    }
+
+    public void setStopOnStillActivity(Boolean stopOnStillActivity) {
+        this.stopOnStillActivity = stopOnStillActivity;
+    }
+
     @Override
     public String toString() {
         Map<String, Object> config = new HashMap<String, Object>();
@@ -429,6 +443,7 @@ public class Config implements Parcelable
         config.put("interval", getInterval());
         config.put("fastestInterval", getFastestInterval());
         config.put("activitiesInterval", getActivitiesInterval());
+        config.put("stopOnStillActivity", getStopOnStillActivity());
         config.put("url", getUrl());
         config.put("headers", getHeaders());
         config.put("params", getParams());
@@ -490,23 +505,25 @@ public class Config implements Parcelable
         if (!data.isNull(14))
             config.setActivitiesInterval(data.getInt(14));
         if (!data.isNull(15))
-            config.setUrl(data.getString(15));
+            config.setStopOnStillActivity(data.getBoolean(15));
         if (!data.isNull(16))
-            config.setHeaders(data.getString(16));
+            config.setUrl(data.getString(16));
         if (!data.isNull(17))
-            config.setParams(data.getString(17));
+            config.setHeaders(data.getString(17));
         if (!data.isNull(18))
-            config.setOauthUrl(data.getString(18));
+            config.setParams(data.getString(18));
         if (!data.isNull(19))
-            config.setAccessToken(data.getString(19));
+            config.setOauthUrl(data.getString(19));
         if (!data.isNull(20))
-            config.setRefreshToken(data.getString(20));
+            config.setAccessToken(data.getString(20));
         if (!data.isNull(21))
-            config.setClientId(data.getString(21));
+            config.setRefreshToken(data.getString(21));
         if (!data.isNull(22))
-            config.setUsername(data.getString(22));
+            config.setClientId(data.getString(22));
         if (!data.isNull(23))
-            config.setPassword(data.getString(23));
+            config.setUsername(data.getString(23));
+        if (!data.isNull(24))
+            config.setPassword(data.getString(24));
 
         return config;
     }
