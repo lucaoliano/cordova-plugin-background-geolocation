@@ -204,6 +204,9 @@ public class LocationService extends Service {
             stopSelf();
         } else {
             log.info("Continue running in background");
+            Intent i = new Intent("YouWillNeverKillMe");
+            i.putExtra("taskRemoved", true);
+            sendBroadcast(i);
         }
         super.onTaskRemoved(rootIntent);
     }
@@ -337,14 +340,16 @@ public class LocationService extends Service {
         }
 
         location.setBatchStartMillis(System.currentTimeMillis() + ONE_MINUTE); // prevent sync of not yet posted location
-        persistLocation(location);
+        if (config.getPersistLocations()) {
+            persistLocation(location);
 
-        if (config.hasUrl() || config.hasSyncUrl()) {
-            Long locationsCount = dao.locationsForSyncCount(System.currentTimeMillis());
-            log.debug("Location to sync: {} threshold: {}", locationsCount, config.getSyncThreshold());
-            if (locationsCount >= config.getSyncThreshold()) {
-                log.debug("Attempt to sync locations: {} threshold: {}", locationsCount, config.getSyncThreshold());
-                SyncService.sync(syncAccount, getStringResource(Config.CONTENT_AUTHORITY_RESOURCE));
+            if (config.hasUrl() || config.hasSyncUrl()) {
+                Long locationsCount = dao.locationsForSyncCount(System.currentTimeMillis());
+                log.debug("Location to sync: {} threshold: {}", locationsCount, config.getSyncThreshold());
+                if (locationsCount >= config.getSyncThreshold()) {
+                    log.debug("Attempt to sync locations: {} threshold: {}", locationsCount, config.getSyncThreshold());
+                    SyncService.sync(syncAccount, getStringResource(Config.CONTENT_AUTHORITY_RESOURCE));
+                }
             }
         }
 

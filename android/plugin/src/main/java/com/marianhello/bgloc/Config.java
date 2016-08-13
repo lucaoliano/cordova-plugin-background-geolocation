@@ -56,6 +56,7 @@ public class Config implements Parcelable
     private Integer syncThreshold = 100;
     private HashMap httpHeaders = new HashMap<String, String>();
     private Integer maxLocations = 10000;
+    private Boolean persistLocations = true;
 
     public Config () {
     }
@@ -87,6 +88,7 @@ public class Config implements Parcelable
         out.writeString(getSyncUrl());
         out.writeInt(getSyncThreshold());
         out.writeInt(getMaxLocations());
+        out.writeValue(getPersistLocations());
         Bundle bundle = new Bundle();
         bundle.putSerializable("httpHeaders", getHttpHeaders());
         out.writeBundle(bundle);
@@ -125,6 +127,7 @@ public class Config implements Parcelable
         setSyncUrl(in.readString());
         setSyncThreshold(in.readInt());
         setMaxLocations(in.readInt());
+        setPersistLocations((Boolean) in.readValue(null));
         Bundle bundle = in.readBundle();
         setHttpHeaders((HashMap<String, String>) bundle.getSerializable("httpHeaders"));
     }
@@ -329,6 +332,14 @@ public class Config implements Parcelable
         this.maxLocations = maxLocations;
     }
 
+    public Boolean getPersistLocations() {
+        return this.persistLocations;
+    }
+
+    public void setPersistLocations(Boolean persistLocations) {
+        this.persistLocations = persistLocations;
+    }
+
     @Override
     public String toString () {
         return new StringBuffer()
@@ -354,6 +365,7 @@ public class Config implements Parcelable
                 .append(" syncThreshold=").append(getSyncThreshold())
                 .append(" httpHeaders=").append(getHttpHeaders().toString())
                 .append(" maxLocations=").append(getMaxLocations())
+                .append(" persistLocations=").append(getPersistLocations())
                 .append("]")
                 .toString();
     }
@@ -396,6 +408,7 @@ public class Config implements Parcelable
         config.setSyncThreshold(jObject.optInt("syncThreshold", config.getSyncThreshold()));
         config.setHttpHeaders(jObject.optJSONObject("httpHeaders"));
         config.setMaxLocations(jObject.optInt("maxLocations", config.getMaxLocations()));
+        config.setPersistLocations(jObject.optBoolean("persistLocations", config.getPersistLocations()));
 
         return config;
     }
@@ -424,6 +437,7 @@ public class Config implements Parcelable
         json.put("syncThreshold", getSyncThreshold());
         json.put("httpHeaders", new JSONObject(getHttpHeaders()));
         json.put("maxLocations", getMaxLocations());
+        json.put("persistLocations", getPersistLocations());
 
         return json;
   	}
