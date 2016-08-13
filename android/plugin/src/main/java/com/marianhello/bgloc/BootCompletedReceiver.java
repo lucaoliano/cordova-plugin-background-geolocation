@@ -28,7 +28,14 @@ public class BootCompletedReceiver extends BroadcastReceiver {
 
     @Override
      public void onReceive(Context context, Intent intent) {
-        Log.d(TAG, "Received boot completed");
+        boolean taskRemoved = intent.getBooleanExtra("taskRemoved", false);
+
+        if (taskRemoved) {
+            Log.d(TAG, "Received service restart");
+        } else {
+            Log.d(TAG, "Received boot completed");
+        }
+        
         ConfigurationDAO dao = DAOFactory.createConfigurationDAO(context);
         Config config = null;
 
@@ -40,10 +47,18 @@ public class BootCompletedReceiver extends BroadcastReceiver {
 
         if (config == null) { return; }
 
-        Log.d(TAG, "Boot completed " + config.toString());
+        if (taskRemoved) {
+        	Log.d(TAG, "Location Service restarting " + config.toString());
+        } else {
+            Log.d(TAG, "Boot completed " + config.toString());
+        }
 
-        if (config.getStartOnBoot()) {
-            Log.i(TAG, "Starting service after boot");
+        if (config.getStartOnBoot() || taskRemoved) {
+        	if (taskRemoved) {
+            	Log.i(TAG, "Starting service after it has been removed");
+            } else {
+                Log.i(TAG, "Starting service after boot");
+            }
             Intent locationServiceIntent = new Intent(context, LocationService.class);
             locationServiceIntent.addFlags(Intent.FLAG_FROM_BACKGROUND);
             locationServiceIntent.putExtra("config", config);
