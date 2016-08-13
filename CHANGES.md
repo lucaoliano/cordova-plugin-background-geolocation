@@ -1,5 +1,100 @@
 ## Changelog
 
+### [2.2.0.alfa.6] - 2016-08-10
+### Fixed
+- Android don't try sync when locations count is lower then threshold
+
+### [2.2.0.alfa.5] - 2016-08-10
+### Fixed
+- Android issue #130 - sync complete notification stays visible
+- Android don't try sync when locations count is zero
+
+### [2.2.0.alfa.4] - 2016-08-10
+### Fixed
+- Android issue #137 - fix only for API LEVEL >= 17
+
+### [2.2.0.alfa.3] - 2016-08-10
+### Fixed
+- Android issue #139 - Starting backgroundGeolocation just after configure failed
+
+### [2.2.0.alfa.2] - 2016-08-10
+### Fixed
+- iOS issue #132 use Library as DB path
+
+### [2.2.0.alfa.1] - 2016-08-01
+### Added
+- Android, iOS limit maximum number of locations in db (maxLocations)
+- Android showAppSettings
+- Android, iOS database logging (getLogEntries)
+- Android, iOS autosync locations to server with configurable threshold
+- Android, iOS method getValidLocations
+- iOS watchLocationMode and stopWatchingLocationMode
+- iOS configurable NSLocationAlwaysUsageDescription
+
+### Changed
+- Locations stored into db at all times
+- iOS persist locations also when url option is not used
+- iOS dropping support for iOS < 4
+
+### Fixed
+- Android fix crash on permission change
+- Android permission error code: 2
+- Android on start err callback instead configure err callback
+- Android overall background service reliability
+- iOS do not block js thread when posting locations
+
+### [2.1.2] - 2016-06-23
+### Fixed
+- iOS database not created
+
+### [2.1.1] - private release
+### Fixed
+- iOS switching mode
+
+### [2.1.0] - private release
+### Added
+- iOS option saveBatteryOnBackground
+- iOS time validation rule for location
+
+### [2.0.0] - 2016-06-17
+### Fixed
+- iOS prevent unintentional start when in background
+- Android Destroy Existing Provider Before Creating New One (#94)
+
+### [2.0.0-rc.3] - 2016-06-13
+#### Fixed
+- iOS memory leak
+
+### [2.0.0-rc.1] - 2016-06-13
+#### Changed
+- Android notificationIcon option split into small and large!!!
+- Android stopOnTerminate defaults to true
+- Android option locationService renamed to locationProvider
+- Android providers renamed (see README.md)
+- Android bugfixing
+- SampleApp moved into separate repo
+- deprecated backgroundGeoLocation
+- iOS split cordova specific code to allow code sharing with react-native-background-geolocation
+- desiredAccuracy map any number
+- Android locationTimeout option renamed to interval
+- iOS switchMode (formerly setPace)
+
+#### Added
+- Android startOnBoot option
+- Android startForeground option
+- iOS, Android http posting of locations (options url and httpHeaders)
+- iOS showLocationSettings
+- iOS showAppSettings
+- iOS isLocationEnabled
+- iOS getLocations
+- iOS deleteLocation
+- iOS deleteAllLocations
+- iOS foreground mode
+
+#### Removed
+- WP8 platform
+- Android deprecated window.plugins.backgroundGeoLocation
+
 ### [1.0.2] - 2016-06-09
 #### Fixed
 - iOS queued locations are send FIFO (before fix LIFO)
