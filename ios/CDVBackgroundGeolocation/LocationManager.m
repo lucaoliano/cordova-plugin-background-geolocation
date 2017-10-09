@@ -15,7 +15,7 @@
 #import "LocationUploader.h"
 #import "SQLiteLocationDAO.h"
 #import "BackgroundTaskManager.h"
-#import "Reachability.h"
+#import "BG_Reachability.h"
 #import "Logging.h"
 
 // Debug sounds for bg-geolocation life-cycle events.
@@ -76,7 +76,7 @@ enum {
     Config *_config;
 
     LocationUploader *uploader;
-    Reachability *reach;
+    BG_Reachability *reach;
 }
 
 
@@ -91,8 +91,8 @@ enum {
     // background location cache, for when no network is detected.
     locationManager = [[CLLocationManager alloc] init];
 
-    reach = [Reachability reachabilityWithHostname:@"www.google.com"];
-    reach.reachableBlock = ^(Reachability *reach){
+    reach = [BG_Reachability reachabilityWithHostname:@"www.google.com"];
+    reach.reachableBlock = ^(BG_Reachability *reach){
         // keep in mind this is called on a background thread
         // and if you are updating the UI it needs to happen
         // on the main thread, like this:
@@ -100,7 +100,7 @@ enum {
         hasConnectivity = YES;
     };
 
-    reach.unreachableBlock = ^(Reachability *reach) {
+    reach.unreachableBlock = ^(BG_Reachability *reach) {
         DDLogInfo(@"Network is now unreachable");
         hasConnectivity = NO;
     };
