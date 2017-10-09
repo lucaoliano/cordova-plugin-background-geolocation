@@ -158,9 +158,9 @@
 
     <platform name="ios">
         <!-- required background modes:  App registers for location updates -->
-        <preference name="ALWAYS_USAGE_DESCRIPTION" default="This app requires background location tracking" />
-        <config-file target="*-Info.plist" parent="NSLocationAlwaysUsageDescription">
-            <string>$ALWAYS_USAGE_DESCRIPTION</string>
+        <preference name="ALWAYS_AND_WHEN_IN_USAGE_DESCRIPTION" default="This app requires background location tracking" />
+        <config-file target="*-Info.plist" parent="NSLocationAlwaysAndWhenInUseUsageDescription">
+            <string>$ALWAYS_AND_WHEN_IN_USAGE_DESCRIPTION</string>
         </config-file>
 
         <config-file target="*-Info.plist" parent="UIBackgroundModes">
